@@ -1,0 +1,2 @@
+# libsbox
+Sandbox management library

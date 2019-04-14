@@ -2,7 +2,12 @@
 #include <iostream>
 using namespace std;
 
+void fatal_handler(const char *msg) {
+    printf("Fatal error: %s\n", msg);
+}
+
 int main() {
+    libsbox::fatal_handler = fatal_handler;
     libsbox::init();
     cout << libsbox::box_id << endl;
 
@@ -10,8 +15,7 @@ int main() {
     getcwd(buf, 1024);
     cout << buf << endl;
 
-    int x;
-    cin >> x;
+    while (true) {}
 
     libsbox::die("Everything is OK!");
 }

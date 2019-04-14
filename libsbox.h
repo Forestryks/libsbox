@@ -16,6 +16,7 @@
 #include <stdarg.h>
 #include <algorithm>
 #include <ftw.h>
+#include <signal.h>
 
 namespace libsbox {
 
@@ -26,12 +27,13 @@ const std::string id_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX
 std::string box_id;
 std::string box_dir;
 
-enum box_states {
+int interrupt;
+
+enum {
     BOX_INVOKER,
     BOX_PROXY,
     BOX_TARGET
-};
-int box_state = BOX_INVOKER;
+} box_state = BOX_INVOKER;
 
 void invoker_die(char *);
 void proxy_die(char *);
@@ -45,7 +47,9 @@ std::string merge_paths() {
 template <typename T, typename... Types>
 std::string merge_paths(const T &path1, Types... rpath2) {
     std::string path2 = merge_paths(rpath2...);
-    if (!path2.empty() && (path1.empty() || path1.back() != '/')) return path1 + "/" + path2;
+    if (!path2.empty() && (path1.empty() || path1.back() != '/')) {
+        return path1 + "/" + path2;
+    }
     return path1 + path2;
 }
 
@@ -70,16 +74,18 @@ void make_path(std::string path, int rules = 0755) {
         iter = std::find(iter, path.end(), '/');
         if (iter != path.end()) *iter = 0;
 
-        if (mkdir(path.c_str(), rules) < 0 && errno != EEXIST)
+        if (mkdir(path.c_str(), rules) < 0 && errno != EEXIST) {
             die("Cannot create directory %s (%s)", path.c_str(), strerror(errno));
+        }
 
         if (iter == path.end()) break;
         *iter = '/';
         iter++;
     }
 
-    if (!dir_exists(path))
+    if (!dir_exists(path)) {
         die("Cannot create directory %s: directory not exists", path.c_str());
+    }
 }
 
 /*
@@ -88,11 +94,13 @@ void make_path(std::string path, int rules = 0755) {
 bool strict;
 int rmtree_handler(const char *path, const struct stat *st, int tflag, struct FTW *ftwbuf) {
     if (S_ISDIR(st->st_mode)) {
-        if (rmdir(path) < 0 && strict)
+        if (rmdir(path) < 0 && strict) {
             die("Cannot remove directory %s (%s)", path, strerror(errno));
+        }
     } else {
-        if (unlink(path) < 0 && strict)
+        if (unlink(path) < 0 && strict) {
             die("Cannot remove file %s (%s)", path, strerror(errno));
+        }
     }
     return 0;
 }
@@ -102,7 +110,67 @@ int rmtree_handler(const char *path, const struct stat *st, int tflag, struct FT
  */
 int rmtree(const char *path, bool is_strict = true) {
     strict = is_strict;
-    return nftw(path, rmtree_util, 20, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
+    return nftw(path, rmtree_handler, 20, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
+}
+
+enum sigactions {
+    SIGACTION_IGNORE,
+    SIGACTION_INTERRUPT,
+    SIGACTION_TERMINATE
+};
+
+struct signal_action {
+    int signum;
+    sigactions sigaction;
+};
+
+const struct signal_action signal_actions[] = {
+    {SIGUSR1, SIGACTION_IGNORE},
+    {SIGUSR2, SIGACTION_IGNORE},
+    {SIGPIPE, SIGACTION_IGNORE},
+    {SIGTERM, SIGACTION_INTERRUPT},
+    {SIGHUP, SIGACTION_INTERRUPT},
+    {SIGINT, SIGACTION_INTERRUPT},
+    {SIGQUIT, SIGACTION_INTERRUPT},
+    {SIGILL, SIGACTION_TERMINATE},
+    {SIGABRT, SIGACTION_TERMINATE},
+    {SIGBUS, SIGACTION_TERMINATE},
+    {SIGFPE, SIGACTION_TERMINATE}
+};
+
+void sigaction_interrupt_handler(int signum) {
+    interrupt = signum;
+}
+
+void sigaction_terminate_handler(int signum) {
+    die("Invoker recieved signal %d (%s)", signum, strsignal(signum));
+}
+
+/*
+ * Disables interrupts, we will re-enable them later (in target processes)
+ */
+void disable_interrupts() {
+    struct sigaction sigaction_interrupt, sigaction_terminate;
+    memset(&sigaction_interrupt, 0, sizeof(sigaction_interrupt));
+    memset(&sigaction_terminate, 0, sizeof(sigaction_terminate));
+    sigaction_interrupt.sa_handler = sigaction_interrupt_handler;
+    sigaction_terminate.sa_handler = sigaction_terminate_handler;
+
+    for (auto &signal_action : signal_actions) {
+        switch (signal_action.sigaction) {
+            case SIGACTION_IGNORE:
+                signal(signal_action.signum, SIG_IGN);
+                break;
+            case SIGACTION_INTERRUPT:
+                sigaction(signal_action.signum, &sigaction_interrupt, NULL);
+                break;
+            case SIGACTION_TERMINATE:
+                sigaction(signal_action.signum, &sigaction_terminate, NULL);
+                break;
+            default:
+                die("Invalid signal action");
+        }
+    }
 }
 
 namespace cgroup {
@@ -124,18 +192,21 @@ struct controller controllers[] = {
  * Initialize cgroup filesystem
  */
 void init() {
-    if (!dir_exists(root))
+    if (!dir_exists(root)) {
         die("cgroup filesystem is not mounted at %s", root.c_str());
+    }
 
     name = "sbox-" + box_id;
 
     struct stat st;
     for (auto &controller : controllers) {
         std::string path = merge_paths(root, controller.name, name);
-        if ((stat(path.c_str(), &st) >= 0 || errno != ENOENT) && rmdir(path.c_str()) < 0)
+        if ((stat(path.c_str(), &st) >= 0 || errno != ENOENT) && rmdir(path.c_str()) < 0) {
             die("Cannot remove existing cgroup controller %s (%s)", path.c_str(), strerror(errno));
-        if (mkdir(path.c_str(), 0755) < 0)
+        }
+        if (mkdir(path.c_str(), 0755) < 0) {
             die("Cannot create cgroup controller %s (%s)", path.c_str(), strerror(errno));
+        }
     }
 }
 
@@ -191,11 +262,13 @@ void generate_id() {
  * Create box, chdir to it
  */
 void init_box() {
-    if (dir_exists(box_dir))
+    if (dir_exists(box_dir)) {
         die("Directory %s already exists", box_dir.c_str());
+    }
     make_path(box_dir);
-    if (chdir(box_dir.c_str()) < 0)
+    if (chdir(box_dir.c_str()) < 0) {
         die("Cannot chdir to %s (%s)", box_dir.c_str(), strerror(errno));
+    }
 }
 
 /*
@@ -203,16 +276,23 @@ void init_box() {
  */
 void init() {
     init_credentials();
+    disable_interrupts();
     generate_id();
     init_box();
     cgroup::init();
 }
 
+void (*fatal_handler)(const char *);
+
 /*
  * Invoker internal error
  */
 void invoker_die(char *buf) {
-    printf("[invoker] %s\n", buf);
+    if (fatal_handler) fatal_handler(buf);
+    else fprintf(stderr, "[invoker] %s\n", buf);
+
+    // TODO: kill proxy first
+
     rmtree(box_dir.c_str(), false);
     cgroup::die();
     exit(-1);

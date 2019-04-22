@@ -5,4 +5,6 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(include)
 
-add_executable(libsbox main.cpp libsbox.cpp fs.cpp)
+add_subdirectory(src)
+
+install(FILES src/libsbox DESTINATION ~/)

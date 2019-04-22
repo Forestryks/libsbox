@@ -3,6 +3,8 @@
 #include <iostream>
 
 int main() {
+//    std::cout << libsbox::test() << std::endl;
+    libsbox::init();
     std::unique_ptr<libsbox::execution_context> test_context(new libsbox::execution_context());
 //    std::unique_ptr<libsbox::execution_target> solution_target(new libsbox::execution_target());
 //    std::unique_ptr<libsbox::execution_target> interactor_target(new libsbox::execution_target());

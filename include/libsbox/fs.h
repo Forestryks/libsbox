@@ -15,8 +15,9 @@ namespace libsbox {
     }
 
     bool dir_exists(const std::string &);
-    void make_path(std::string, int);
-    int rmtree(const char *, bool);
+    void make_path(std::string, int rules = 0755);
+    int rmtree(const std::string &, bool is_strict = true);
+    std::string make_temp_dir(const std::string &, int rules = 0755);
 } // namespace libsbox
 
 #endif //LIBSBOX_FS_H

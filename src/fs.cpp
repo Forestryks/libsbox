@@ -5,6 +5,9 @@
 #include <cstring>
 #include <unistd.h>
 #include <ftw.h>
+#include <random>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 std::string libsbox::join_path(const std::string &path) {
     return path;
@@ -15,7 +18,7 @@ bool libsbox::dir_exists(const std::string &path)  {
     return (stat(path.c_str(), &st) >= 0 && S_ISDIR(st.st_mode));
 }
 
-void libsbox::make_path(std::string path, int rules = 0755) {
+void libsbox::make_path(std::string path, int rules) {
     if (path.empty()) die("make_path() with empty path");
 
     auto iter = path.begin();
@@ -56,7 +59,42 @@ namespace libsbox {
     }
 }
 
-int libsbox::rmtree(const char *path, bool is_strict = true) {
+int libsbox::rmtree(const std::string &path, bool is_strict) {
     strict = is_strict;
-    return nftw(path, rmtree_handler, 20, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
+    return nftw(path.c_str(), rmtree_handler, 20, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
+}
+
+const int NAME_LEN = 15;
+const int NUM_TRIES = 10;
+const char ALPHA[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const int ALPHA_LEN = strlen(ALPHA);
+
+/*
+ * Return relative path
+ */
+std::string libsbox::make_temp_dir(const std::string &prefix, int rules) {
+    if (prefix.empty()) die("make_temp with empty path");
+    std::random_device rd;
+    std::mt19937 mt(rd());
+
+    int ret = 0;
+    int tries = 0;
+    std::string name;
+    while (tries < NUM_TRIES) {
+        tries++;
+        name.resize(NAME_LEN);
+        for (int i = 0; i < NAME_LEN; ++i) {
+            name[i] = ALPHA[mt() % ALPHA_LEN];
+        }
+        std::string path = join_path(prefix, name);
+
+        struct stat st = {};
+
+        if (stat(path.c_str(), &st) == 0 || errno != ENOENT) continue;
+
+        make_path(path);
+        return name;
+    }
+
+    die("Failed to find free id within %d tries", NUM_TRIES);
 }

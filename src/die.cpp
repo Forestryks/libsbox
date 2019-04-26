@@ -1,10 +1,12 @@
-#include <libsbox/die.h>
-#include <libsbox/fs.h>
-#include <libsbox/init.h>
+/*
+ * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
+ */
 
-#include <cstdlib>
+#include <libsbox/die.h>
+
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 
 void standard_fatal_handler(const char *msg) {
     fprintf(stderr, "%s", msg);
@@ -40,6 +42,5 @@ void libsbox::die(bool critical, const char *msg, va_list va_args) {
     fatal_handler(err_buf);
 
     if (critical) exit(-1);
-
-    rmtree(join_path(prefix, id), false);
+    exit(-2);
 }

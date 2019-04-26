@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
+ */
+
 #include <libsbox.h>
 #include <memory>
 #include <iostream>
@@ -8,6 +12,20 @@ void fatal_handler(const char *msg) {
 
 int main() {
     libsbox::init(fatal_handler);
+
+    std::unique_ptr<libsbox::execution_target> solution_target(new libsbox::execution_target({"test"}));
+
+    libsbox::link("input.txt", solution_target->stdin);
+    libsbox::link(solution_target->stdout, "output.txt");
+
+    solution_target->bind_rules["file"] = {"file", libsbox::BIND_FILE | libsbox::BIND_READWRITE};
+
+    solution_target->time_limit = 1000;
+    solution_target->memory_limit = 256 * 1024;
+    solution_target->fsize_limit = 256 * 1024;
+    solution_target->max_threads = 1;
+
+
 //    std::unique_ptr<libsbox::execution_context> test_context(new libsbox::execution_context());
 //    std::unique_ptr<libsbox::execution_target> solution_target(new libsbox::execution_target());
 //    std::unique_ptr<libsbox::execution_target> interactor_target(new libsbox::execution_target());

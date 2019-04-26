@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
+ */
+
 #ifndef LIBSBOX_DIE_H
 #define LIBSBOX_DIE_H
 
@@ -14,6 +18,6 @@ namespace libsbox {
 
     [[noreturn]]
     void die(bool, const char *, va_list);
-}
+} // namespace libsbox
 
 #endif //LIBSBOX_DIE_H

@@ -15,16 +15,21 @@ int main() {
 
     std::unique_ptr<libsbox::execution_target> solution_target(new libsbox::execution_target({"test"}));
 
-    libsbox::link("input.txt", solution_target->stdin);
-    libsbox::link(solution_target->stdout, "output.txt");
-
-    solution_target->bind_rules["file"] = {"file", libsbox::BIND_FILE | libsbox::BIND_READWRITE};
+    solution_target->bind_rules["input.txt"] = {"input.txt", libsbox::BIND_COPY_IN};
+    solution_target->bind_rules["output.txt"] = {"output.txt", libsbox::BIND_COPY_OUT | libsbox::BIND_OPTIONAL |
+                                                               libsbox::BIND_READWRITE};
 
     solution_target->time_limit = 1000;
     solution_target->memory_limit = 256 * 1024;
-    solution_target->fsize_limit = 256 * 1024;
-    solution_target->max_threads = 1;
 
+    std::unique_ptr<libsbox::execution_context> context(new libsbox::execution_context());
+
+    context->register_target(solution_target.get());
+
+    context->link("input.txt", &solution_target->stdin);
+    context->link(&solution_target->stdout, "output.txt");
+
+    context->run();
 
 //    std::unique_ptr<libsbox::execution_context> test_context(new libsbox::execution_context());
 //    std::unique_ptr<libsbox::execution_target> solution_target(new libsbox::execution_target());

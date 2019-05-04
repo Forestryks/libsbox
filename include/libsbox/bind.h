@@ -13,9 +13,8 @@ namespace libsbox {
         BIND_ALLOWDEV = 2,
         BIND_NOREC = 4,
         BIND_OPTIONAL = 8,
-        BIND_FILE = 16,
-        BIND_COPY_IN = 32,
-        BIND_COPY_OUT = 64
+        BIND_COPY_IN = 16,
+        BIND_COPY_OUT = 32
     };
 
     struct bind_rule {

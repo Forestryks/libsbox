@@ -3,6 +3,8 @@
  */
 
 #include <libsbox/execution_target.h>
+#include <libsbox/init.h>
+#include <libsbox/die.h>
 
 #include <cstring>
 #include <iostream>
@@ -26,9 +28,40 @@ libsbox::execution_target::execution_target(int argc, const char **argv) {
 }
 
 void libsbox::execution_target::init() {
-    bind_rules["bin"] = {"bin"};
-    bind_rules["lib"] = {"lib"};
-    bind_rules["lib64"] = {"lib64", BIND_OPTIONAL};
-    bind_rules["usr"] = {"usr"};
-    bind_rules["dev"] = {"dev", BIND_ALLOWDEV};
+    if (!initialized) libsbox::die("Cannot create execution_target while not initialized");
+
+    this->bind_rules["lib"] = {"lib"};
+    this->bind_rules["lib64"] = {"lib64", BIND_OPTIONAL};
+    this->bind_rules["usr/lib"] = {"usr/lib"};
+    this->bind_rules["usr/lib64"] = {"usr/lib64", BIND_OPTIONAL};
+
+//    bind_rules["bin"] = {"bin"};
+//    bind_rules["usr/bin"] = {"usr/bin"};
+//    bind_rules["usr"] = {"usr"};
+//    bind_rules["dev"] = {"dev", BIND_ALLOWDEV};
+}
+
+void libsbox::execution_target::die() {
+    if (this->cpuacct_controller != nullptr) this->cpuacct_controller->die();
+    if (this->memory_controller != nullptr) this->memory_controller->die();
+    // remove cgroup
+    // remove dir
+}
+
+void libsbox::execution_target::prepare() {
+    this->cpuacct_controller = new cgroup_controller("cpuacct");
+    this->memory_controller = new cgroup_controller("memory");
+    // create cgroup
+    // prepare cgroup
+    // create dir
+    // prepare dir
+    // apply bind_rules
+}
+
+void libsbox::execution_target::cleanup() {
+    delete this->cpuacct_controller;
+    delete this->memory_controller;
+
+    this->cpuacct_controller = nullptr;
+    this->memory_controller = nullptr;
 }

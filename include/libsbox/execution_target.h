@@ -7,6 +7,7 @@
 
 #include <libsbox/io.h>
 #include <libsbox/bind.h>
+#include <libsbox/cgroup.h>
 
 #include <vector>
 #include <string>
@@ -34,13 +35,24 @@ public:
 
     std::map<std::string, bind_rule> bind_rules;
 
+    uid_t uid = 31313;
+    gid_t gid = 31313;
+
+    cgroup_controller *cpuacct_controller, *memory_controller;
+
     explicit execution_target(const std::vector<std::string> &);
 
-    explicit execution_target(int, const char **);
+    execution_target(int, const char **);
+
+    ~execution_target() = default;
 
     void init();
 
-    ~execution_target() = default;
+    void die();
+
+    void prepare();
+
+    void cleanup();
 };
 
 #endif //LIBSBOX_EXECUTION_TARGET_H

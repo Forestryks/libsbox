@@ -22,7 +22,6 @@ void libsbox::execution_context::link(libsbox::out_stream *stream, const std::st
 }
 
 void libsbox::execution_context::run() {
-    disable_signals();
     current_context = this;
 
     for (auto target : this->targets) {
@@ -41,7 +40,6 @@ void libsbox::execution_context::run() {
     }
 
     current_context = nullptr;
-    restore_signals();
 }
 
 void libsbox::execution_context::die() {

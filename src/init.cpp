@@ -4,11 +4,13 @@
 
 #include <libsbox/init.h>
 #include <libsbox/die.h>
+#include <libsbox/signal.h>
 
 #include <errno.h>
 #include <cstring>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <exception>
 
 bool libsbox::initialized = false;
 
@@ -16,7 +18,12 @@ void libsbox::init(void (*fatal_error_handler)(const char *)) {
     fatal_handler = fatal_error_handler;
     if (initialized) die("Already initialized");
 
+    std::set_terminate([](){
+        die("Uncaught exception");
+    });
+
     init_credentials();
+    disable_signals();
 
     initialized = true;
 }

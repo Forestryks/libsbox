@@ -15,6 +15,8 @@
 
 namespace libsbox {
     class execution_target;
+
+    extern execution_target *current_target;
 } // namespace libsbox
 
 class libsbox::execution_target {
@@ -35,10 +37,12 @@ public:
 
     std::map<std::string, bind_rule> bind_rules;
 
-    uid_t uid = 31313;
-    gid_t gid = 31313;
+    cgroup_controller *cpuacct_controller = nullptr, *memory_controller = nullptr;
 
-    cgroup_controller *cpuacct_controller, *memory_controller;
+    pid_t proxy_pid = 0;
+    pid_t target_pid = 0;
+
+    int status_pipe[2] = {-1, -1};
 
     explicit execution_target(const std::vector<std::string> &);
 
@@ -53,6 +57,8 @@ public:
     void prepare();
 
     void cleanup();
+
+    int proxy();
 };
 
 #endif //LIBSBOX_EXECUTION_TARGET_H

@@ -3,13 +3,16 @@
  */
 
 #include <libsbox/execution_target.h>
+#include <libsbox/execution_context.h>
 #include <libsbox/init.h>
 #include <libsbox/die.h>
 
 #include <cstring>
 #include <iostream>
+#include <unistd.h>
 
 libsbox::execution_target::execution_target(const std::vector<std::string> &argv) {
+    if (argv.empty()) libsbox::die("argv length must be at least 1");
     this->argv = new char *[argv.size() + 1];
     for (int i = 0; i < argv.size(); ++i) {
         this->argv[i] = strdup(argv[i].c_str());
@@ -19,6 +22,7 @@ libsbox::execution_target::execution_target(const std::vector<std::string> &argv
 }
 
 libsbox::execution_target::execution_target(int argc, const char **argv) {
+    if (argc == 0) libsbox::die("argv length must be at least 1");
     this->argv = new char *[argc + 1];
     for (int i = 0; i < argc; ++i) {
         this->argv[i] = strdup(argv[i]);
@@ -65,3 +69,13 @@ void libsbox::execution_target::cleanup() {
     this->cpuacct_controller = nullptr;
     this->memory_controller = nullptr;
 }
+
+int libsbox::execution_target::proxy() {
+    pid_t pid = getpid();
+    std::cout << "My pid: " << pid << std::endl;
+    exit(-1);
+}
+
+namespace libsbox {
+    execution_target *current_target = nullptr;
+} // namespace libsbox

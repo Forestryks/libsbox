@@ -8,12 +8,11 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <unistd.h>
 
 void standard_fatal_handler(const char *msg) {
     fprintf(stderr, "%s", msg);
 }
-
-void (*libsbox::fatal_handler)(const char *) = standard_fatal_handler;
 
 [[noreturn]] __attribute__((format(printf, 1, 2)))
 void libsbox::die(const char *msg, ...) {
@@ -40,10 +39,20 @@ void libsbox::die(bool critical, const char *msg, va_list va_args) {
         strcpy(err_buf, tmp_buf);
     }
 
-    fatal_handler(err_buf);
+    if (current_target == nullptr) {
+        // We are in invoker process
+        fatal_handler(err_buf);
 
-    if (current_context != nullptr) current_context->die();
+        if (current_context != nullptr) current_context->die();
+    } else {
+        // We are in proxy or target
+//        write(current_context->error_pipe[1]);
+    }
 
     if (critical) exit(-1);
     exit(-2);
 }
+
+namespace libsbox {
+    void (*fatal_handler)(const char *) = standard_fatal_handler;
+} // namespace libsbox

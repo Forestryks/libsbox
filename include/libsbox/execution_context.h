@@ -19,12 +19,19 @@ namespace libsbox {
 
 class libsbox::execution_context {
 public:
+    long wall_time_limit = -1;
+    int error_pipe[2];
+
     std::vector<execution_target *> targets;
 
     std::vector<io_pipe> pipes;
     std::vector<io_infile> input_files;
     std::vector<io_outfile> output_files;
-public:
+
+    void create_pipes();
+
+    void destroy_pipes();
+
     void register_target(execution_target *);
 
     void link(out_stream *, in_stream *, int pipe_flags = 0);

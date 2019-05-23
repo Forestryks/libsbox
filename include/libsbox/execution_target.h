@@ -65,10 +65,9 @@ public:
     bool oom_killed = false;
 
 
+    execution_target(int, const char **);
 
     explicit execution_target(const std::vector<std::string> &);
-
-    execution_target(int, const char **);
 
     ~execution_target() = default;
 

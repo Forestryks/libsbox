@@ -22,10 +22,10 @@ namespace libsbox {
     bool path_exists(const std::string &);
     bool dir_exists(const std::string &);
     void make_path(std::string, int rules = 0755);
-    void make_file(std::string, int rules = 0755);
+    void make_file(std::string, int rules = 0755, int file_rules = 0644);
     int rmtree(const std::string &, bool is_strict = true);
     std::string make_temp_dir(std::string, int rules = 0755);
-    void copy_file(const std::string &, const std::string &, int rules = 0755);
+    void copy_file(const std::string &, const std::string &, int rules = 0644);
 } // namespace libsbox
 
 #endif //LIBSBOX_FS_H

@@ -25,7 +25,7 @@ bool libsbox::dir_exists(const std::string &path)  {
     return (stat(path.c_str(), &st) >= 0 && S_ISDIR(st.st_mode));
 }
 
-void libsbox::make_file(std::string path, int rules) {
+void libsbox::make_file(std::string path, int rules, int file_rules) {
     if (path.empty()) die("make_path() with empty path");
 
     auto iter = path.begin();
@@ -41,7 +41,7 @@ void libsbox::make_file(std::string path, int rules) {
             *iter = '/';
             iter++;
         } else {
-            if (creat(path.c_str(), rules) < 0) {
+            if (creat(path.c_str(), file_rules) < 0) {
                 die("Cannot create file %s (%s)", path.c_str(), strerror(errno));
             }
             break;

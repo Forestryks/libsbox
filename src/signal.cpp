@@ -9,6 +9,8 @@
 #include <signal.h>
 #include <cstring>
 #include <errno.h>
+#include <sys/time.h>
+#include <libsbox/conf.h>
 
 namespace libsbox {
     enum sigactions {
@@ -34,7 +36,8 @@ namespace libsbox {
             {SIGABRT, SIGACTION_TERMINATE},
             {SIGIOT,  SIGACTION_TERMINATE},
             {SIGBUS,  SIGACTION_TERMINATE},
-            {SIGFPE,  SIGACTION_TERMINATE}
+            {SIGFPE,  SIGACTION_TERMINATE},
+            {SIGALRM, SIGACTION_INTERRUPT}
     };
 }
 
@@ -94,4 +97,18 @@ void libsbox::reset_signals() {
             die("Cannot restore default signal action for %s (%s)", strsignal(signal_action.signum), strerror(errno));
         }
     }
+}
+
+void libsbox::start_timer(long interval) {
+    struct itimerval timer = {};
+    memset(&timer, 0, sizeof(timer));
+    timer.it_interval.tv_usec = interval * 1000;
+    timer.it_value.tv_usec = interval * 1000;
+    setitimer(ITIMER_REAL, &timer, nullptr);
+}
+
+void libsbox::stop_timer() {
+    struct itimerval timer = {};
+    memset(&timer, 0, sizeof(timer));
+    setitimer(ITIMER_REAL, &timer, nullptr);
 }

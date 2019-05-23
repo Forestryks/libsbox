@@ -37,6 +37,10 @@ public:
     void run();
 
     void die();
+
+    struct timeval run_start = {};
+    void reset_wall_clock();
+    long get_wall_clock();
 };
 
 #endif //LIBSBOX_EXECUTION_CONTEXT_H

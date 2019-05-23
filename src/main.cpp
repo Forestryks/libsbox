@@ -13,13 +13,14 @@ void fatal_handler(const char *msg) {
 int main() {
     libsbox::init(fatal_handler);
 
-    std::unique_ptr<libsbox::execution_target> solution_target(new libsbox::execution_target({"test"}));
+    std::unique_ptr<libsbox::execution_target> solution_target(new libsbox::execution_target({"solution"}));
 
     solution_target->bind_rules["input.txt"] = {"input.txt", libsbox::BIND_COPY_IN};
-    solution_target->bind_rules["output.txt"] = {"output.txt", libsbox::BIND_READWRITE};
+    solution_target->bind_rules["output.txt"] = {"output.txt", libsbox::BIND_COPY_OUT};
+//    solution_target->bind_rules["solution"] = {"solution", 0};
 
-//    solution_target->stdin.freopen("input.txt");
-//    solution_target->stdout.freopen("output.txt");
+    solution_target->stdin.freopen("input.txt");
+    solution_target->stdout.freopen("output.txt");
 
     solution_target->time_limit = 1000;
     solution_target->memory_limit = 256 * 1024;
@@ -29,7 +30,7 @@ int main() {
     context->register_target(solution_target.get());
 
     context->wall_time_limit = 4000;
-    
+
     context->run();
 
 //    std::unique_ptr<libsbox::execution_context> test_context(new libsbox::execution_context());

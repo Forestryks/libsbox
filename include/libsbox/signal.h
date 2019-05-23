@@ -9,6 +9,8 @@ namespace libsbox {
     void disable_signals();
     void reset_signals();
 
+    void start_timer(long interval);
+    void stop_timer();
     extern int interrupt_signal;
 } // namespace libsbox
 

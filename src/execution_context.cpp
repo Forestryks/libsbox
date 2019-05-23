@@ -13,6 +13,7 @@
 #include <cstring>
 #include <signal.h>
 #include <wait.h>
+#include <sys/time.h>
 
 void libsbox::execution_context::register_target(libsbox::execution_target *target) {
     this->targets.push_back(target);
@@ -43,12 +44,12 @@ void libsbox::execution_context::create_pipes() {
         }
     }
 
-    if (pipe2(this->error_pipe, O_NONBLOCK | O_DIRECT) != 0) {
+    if (pipe2(this->error_pipe, O_NONBLOCK | O_DIRECT | O_CLOEXEC) != 0) {
         libsbox::die("Cannot create error pipe: pipe2 failed (%s)", strerror(errno));
     }
 
     for (auto target : this->targets) {
-        if (pipe2(target->status_pipe, 0) != 0) {
+        if (pipe2(target->status_pipe, O_CLOEXEC) != 0) {
             libsbox::die("Cannot create status pipe: pipe2 failed (%s)", strerror(errno));
         }
     }
@@ -80,6 +81,17 @@ void libsbox::execution_context::destroy_pipes() {
 
 #include <iostream>
 
+void libsbox::execution_context::reset_wall_clock() {
+    gettimeofday(&this->run_start, nullptr);
+}
+
+long libsbox::execution_context::get_wall_clock() {
+    struct timeval now = {}, seg = {};
+    gettimeofday(&now, nullptr);
+    timersub(&now, &this->run_start, &seg);
+    return seg.tv_sec * 1000 + seg.tv_usec / 1000;
+}
+
 void libsbox::execution_context::run() {
     current_context = this;
 
@@ -98,16 +110,88 @@ void libsbox::execution_context::run() {
         libsbox::die("Cannot close write end of error pipe (%s)", strerror(errno));
     }
 
-    int status;
-    wait(&status);
+    this->reset_wall_clock();
+    start_timer(timer_interval);
 
-    char buf[err_buf_size];
-    if (read(this->error_pipe[0], buf, err_buf_size) != 0) {
-        libsbox::die("%s", buf);
+    int exited_cnt = 0;
+    char err_buf[err_buf_size];
+    while (exited_cnt < this->targets.size()) {
+        int stat;
+        pid_t pid = wait(&stat);
+        if (pid < 0) {
+            if (errno != EINTR) {
+                libsbox::die("Wait failed (%s)", strerror(errno));
+            }
+            if (interrupt_signal != SIGALRM) {
+                libsbox::die("Wait interrupted with %s", strsignal(interrupt_signal));
+            }
+
+            if (this->get_wall_clock() > this->wall_time_limit) {
+                for (auto target : this->targets) {
+                    if (!target->running) continue;
+                    target->wall_time_limit_exceeded = true;
+                    kill(-target->proxy_pid, SIGKILL);
+                    kill(target->proxy_pid, SIGKILL);
+                }
+            }
+
+            for (auto target : this->targets) {
+                if (!target->running) continue;
+                if (target->get_time_usage() > target->time_limit) {
+                    target->time_limit_exceeded = true;
+                    kill(-target->proxy_pid, SIGKILL);
+                    kill(target->proxy_pid, SIGKILL);
+                }
+            }
+
+            continue;
+        }
+
+        // TODO: -1 in reads, writes and printfs
+        int size = read(error_pipe[0], err_buf, err_buf_size - 1);
+        if (size > 0) {
+            err_buf[size] = 0;
+            libsbox::die("%s", err_buf);
+        }
+
+        execution_target *exited_target = nullptr;
+        for (auto target : this->targets) {
+            if (target->proxy_pid == pid) {
+                exited_target = target;
+                exited_cnt++;
+                break;
+            }
+        }
+
+        if (exited_target == nullptr) {
+            libsbox::die("Unknown child exited");
+        }
+
+        size = read(exited_target->status_pipe[0], &stat, sizeof(stat));
+        if (size != sizeof(stat)) {
+            libsbox::die("Cannot recieve target exit status from proxy (%s)", strerror(errno));
+        }
+
+        exited_target->running = false;
+
+        if (WIFEXITED(stat)) {
+            exited_target->exited = true;
+            exited_target->exit_code = WEXITSTATUS(stat);
+        }
+        if (WIFSIGNALED(stat)) {
+            exited_target->signaled = true;
+            exited_target->term_signal = WTERMSIG(stat);
+        }
+
+        exited_target->wall_time_usage = this->get_wall_clock();
+        exited_target->time_usage = exited_target->get_time_usage();
+        exited_target->time_usage_sys = exited_target->get_time_usage_sys();
+        exited_target->time_usage_user = exited_target->get_time_usage_user();
+        exited_target->memory_usage = exited_target->get_memory_usage();
+        exited_target->oom_killed = exited_target->get_oom_status();
     }
-    // wait for process
 
-//    sleep(1000);
+    stop_timer();
 
     this->destroy_pipes();
 

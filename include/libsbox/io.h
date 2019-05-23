@@ -10,7 +10,7 @@
 
 namespace libsbox {
     class io_stream {
-    private:
+    public:
         int fd = -1;
         std::string filename;
     public:

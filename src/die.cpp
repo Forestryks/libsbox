@@ -31,7 +31,7 @@ void libsbox::die(const char *msg, ...) {
         char err_buf2[err_buf_size];
         if (current_target->inside_box) {
             // We are in target
-            snprintf(err_buf2, err_buf_size, "[target] %s", err_buf);
+            snprintf(err_buf2, err_buf_size, "[slave] %s", err_buf);
         } else {
             // We are in proxy
             snprintf(err_buf2, err_buf_size, "[proxy] %s", err_buf);

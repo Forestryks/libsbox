@@ -10,9 +10,15 @@
 
 namespace libsbox {
     class io_stream {
-    public:
+    private:
         int fd = -1;
+        std::string filename;
+    public:
+        void freopen(const std::string &filename);
+        void reset();
+        friend class execution_context;
     };
+
     class in_stream : public io_stream {};
     class out_stream : public io_stream {};
 
@@ -22,17 +28,17 @@ namespace libsbox {
         int extra_flags;
     };
 
-    struct io_infile {
-        std::string filename;
-        in_stream *stream;
-        int extra_flags;
-    };
-
-    struct io_outfile {
-        out_stream *stream;
-        std::string filename;
-        int extra_flags;
-    };
+//    struct io_infile {
+//        std::string filename;
+//        in_stream *stream;
+//        int extra_flags;
+//    };
+//
+//    struct io_outfile {
+//        out_stream *stream;
+//        std::string filename;
+//        int extra_flags;
+//    };
 } // namespace libsbox
 
 #endif //LIBSBOX_IO_H

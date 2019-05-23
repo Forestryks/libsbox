@@ -20,6 +20,10 @@ public:
 
     explicit cgroup_controller(const std::string &);
     ~cgroup_controller();
+
+    void write(std::string, const std::string &);
+    std::string read(std::string);
+    void enter();
 };
 
 #endif //LIBSBOX_CGROUP_H

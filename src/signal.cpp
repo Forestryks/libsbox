@@ -26,10 +26,10 @@ namespace libsbox {
             {SIGUSR1, SIGACTION_IGNORE},
             {SIGUSR2, SIGACTION_IGNORE},
             {SIGPIPE, SIGACTION_IGNORE},
-            {SIGTERM, SIGACTION_INTERRUPT},
-            {SIGHUP,  SIGACTION_INTERRUPT},
-            {SIGINT,  SIGACTION_INTERRUPT},
-            {SIGQUIT, SIGACTION_INTERRUPT},
+            {SIGTERM, SIGACTION_TERMINATE},
+            {SIGHUP,  SIGACTION_TERMINATE},
+            {SIGINT,  SIGACTION_TERMINATE},
+            {SIGQUIT, SIGACTION_TERMINATE},
             {SIGILL,  SIGACTION_TERMINATE},
             {SIGABRT, SIGACTION_TERMINATE},
             {SIGIOT,  SIGACTION_TERMINATE},
@@ -46,7 +46,7 @@ namespace libsbox {
     }
 
     void sigaction_terminate_handler(int signum) {
-        panic("Received fatal signal %d (%s)", signum, strsignal(signum));
+        die("Received fatal signal %d (%s)", signum, strsignal(signum));
     }
 }
 
@@ -84,7 +84,7 @@ void libsbox::disable_signals() {
     }
 }
 
-void libsbox::restore_signals() {
+void libsbox::reset_signals() {
     struct sigaction sigaction_default = {};
     memset(&sigaction_default, 0, sizeof(sigaction_default));
     sigaction_default.sa_handler = SIG_DFL;

@@ -26,9 +26,6 @@ public:
     long fsize_limit = -1;
     int max_files = 64;
     int max_threads = 1;
-    long root_tmpfs_max_size = 1024 * 1024;
-
-    std::string chdir_to = "/";
 
     char **argv;
 
@@ -43,6 +40,10 @@ public:
     pid_t target_pid = 0;
 
     int status_pipe[2] = {-1, -1};
+
+    std::string id;
+
+    bool inside_box = false;
 
     explicit execution_target(const std::vector<std::string> &);
 
@@ -59,6 +60,10 @@ public:
     void cleanup();
 
     int proxy();
+
+    void start_proxy();
+
+    void prepare_root();
 };
 
 #endif //LIBSBOX_EXECUTION_TARGET_H

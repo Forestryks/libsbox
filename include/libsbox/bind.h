@@ -5,16 +5,14 @@
 #ifndef LIBSBOX_BIND_H
 #define LIBSBOX_BIND_H
 
-#include <map>
+#include <string>
 
 namespace libsbox {
     enum {
         BIND_READWRITE = 1,
-        BIND_ALLOWDEV = 2,
-        BIND_NOREC = 4,
-        BIND_OPTIONAL = 8,
-        BIND_COPY_IN = 16,
-        BIND_COPY_OUT = 32
+        BIND_OPTIONAL = 2,
+        BIND_COPY_IN = 4,
+        BIND_COPY_OUT = 8
     };
 
     struct bind_rule {

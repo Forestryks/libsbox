@@ -25,8 +25,6 @@ public:
     std::vector<execution_target *> targets;
 
     std::vector<io_pipe> pipes;
-    std::vector<io_infile> input_files;
-    std::vector<io_outfile> output_files;
 
     void create_pipes();
 
@@ -35,10 +33,6 @@ public:
     void register_target(execution_target *);
 
     void link(out_stream *, in_stream *, int pipe_flags = 0);
-
-    void link(const std::string &, in_stream *, int open_flags = 0);
-
-    void link(out_stream *, const std::string &, int open_flags = 0);
 
     void run();
 

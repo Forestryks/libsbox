@@ -4,6 +4,7 @@
 
 #include <libsbox/die.h>
 #include <libsbox/execution_context.h>
+#include <libsbox/conf.h>
 
 #include <cstdio>
 #include <cstring>
@@ -17,27 +18,9 @@ void standard_fatal_handler(const char *msg) {
 [[noreturn]] __attribute__((format(printf, 1, 2)))
 void libsbox::die(const char *msg, ...) {
     va_list va_args;
+    char err_buf[err_buf_size];
     va_start(va_args, msg);
-    die(false, msg, va_args);
-}
-
-[[noreturn]] __attribute__((format(printf, 1, 2)))
-void libsbox::panic(const char *msg, ...) {
-    va_list va_args;
-    va_start(va_args, msg);
-    die(true, msg, va_args);
-}
-
-[[noreturn]]
-void libsbox::die(bool critical, const char *msg, va_list va_args) {
-    const int ERR_BUF_SIZE = 2048;
-    char err_buf[ERR_BUF_SIZE];
-    vsnprintf(err_buf, ERR_BUF_SIZE, msg, va_args);
-    if (critical) {
-        char tmp_buf[ERR_BUF_SIZE];
-        snprintf(tmp_buf, ERR_BUF_SIZE, "Critical error! %s", err_buf);
-        strcpy(err_buf, tmp_buf);
-    }
+    vsnprintf(err_buf, err_buf_size, msg, va_args);
 
     if (current_target == nullptr) {
         // We are in invoker process
@@ -45,12 +28,20 @@ void libsbox::die(bool critical, const char *msg, va_list va_args) {
 
         if (current_context != nullptr) current_context->die();
     } else {
-        // We are in proxy or target
-//        write(current_context->error_pipe[1]);
+        char err_buf2[err_buf_size];
+        if (current_target->inside_box) {
+            // We are in target
+            snprintf(err_buf2, err_buf_size, "[target] %s", err_buf);
+        } else {
+            // We are in proxy
+            snprintf(err_buf2, err_buf_size, "[proxy] %s", err_buf);
+        }
+
+        write(current_context->error_pipe[1], err_buf2, strlen(err_buf2));
+        exit(1);
     }
 
-    if (critical) exit(-1);
-    exit(-2);
+    exit(1);
 }
 
 namespace libsbox {

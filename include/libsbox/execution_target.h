@@ -48,12 +48,14 @@ public:
 
     int exec_fd = -1;
 
+    bool proxy_killed = false;
+
     // stats
     bool running = false;
     long time_usage = 0;
     long time_usage_sys = 0;
     long time_usage_user = 0;
-    long wall_time_usage = 0;
+    long time_usage_wall = 0;
     long memory_usage = 0;
 
     bool time_limit_exceeded = false;
@@ -65,7 +67,7 @@ public:
     bool oom_killed = false;
 
 
-    execution_target(int, const char **);
+    execution_target(int, char **);
 
     explicit execution_target(const std::vector<std::string> &);
 

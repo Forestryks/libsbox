@@ -123,21 +123,23 @@ void libsbox::execution_context::run() {
                 libsbox::die("Wait interrupted with %s", strsignal(interrupt_signal));
             }
 
-            if (this->get_wall_clock() > this->wall_time_limit) {
+            if (this->wall_time_limit != -1 && this->get_wall_clock() > this->wall_time_limit) {
                 for (auto target : this->targets) {
                     if (!target->running) continue;
                     target->wall_time_limit_exceeded = true;
                     kill(-target->proxy_pid, SIGKILL);
                     kill(target->proxy_pid, SIGKILL);
+                    target->proxy_killed = true;
                 }
             }
 
             for (auto target : this->targets) {
                 if (!target->running) continue;
-                if (target->get_time_usage() > target->time_limit) {
+                if (target->time_limit != -1 && target->get_time_usage() > target->time_limit) {
                     target->time_limit_exceeded = true;
                     kill(-target->proxy_pid, SIGKILL);
                     kill(target->proxy_pid, SIGKILL);
+                    target->proxy_killed = true;
                 }
             }
 
@@ -164,23 +166,25 @@ void libsbox::execution_context::run() {
             libsbox::die("Unknown child exited");
         }
 
-        size = read(exited_target->status_pipe[0], &stat, sizeof(stat));
-        if (size != sizeof(stat)) {
-            libsbox::die("Cannot recieve target exit status from proxy (%s)", strerror(errno));
-        }
-
         exited_target->running = false;
 
-        if (WIFEXITED(stat)) {
-            exited_target->exited = true;
-            exited_target->exit_code = WEXITSTATUS(stat);
-        }
-        if (WIFSIGNALED(stat)) {
-            exited_target->signaled = true;
-            exited_target->term_signal = WTERMSIG(stat);
+        if (!exited_target->proxy_killed) {
+            size = read(exited_target->status_pipe[0], &stat, sizeof(stat));
+            if (size != sizeof(stat)) {
+                libsbox::die("Cannot recieve target exit status from proxy (%s)", strerror(errno));
+            }
+
+            if (WIFEXITED(stat)) {
+                exited_target->exited = true;
+                exited_target->exit_code = WEXITSTATUS(stat);
+            }
+            if (WIFSIGNALED(stat)) {
+                exited_target->signaled = true;
+                exited_target->term_signal = WTERMSIG(stat);
+            }
         }
 
-        exited_target->wall_time_usage = this->get_wall_clock();
+        exited_target->time_usage_wall = this->get_wall_clock();
         exited_target->time_usage = exited_target->get_time_usage();
         exited_target->time_usage_sys = exited_target->get_time_usage_sys();
         exited_target->time_usage_user = exited_target->get_time_usage_user();

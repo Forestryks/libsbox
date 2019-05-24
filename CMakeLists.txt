@@ -24,6 +24,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
     CACHE PATH "Library output"
 )
 
+enable_testing()
+
 include_directories(include)
 add_subdirectory(src)
 add_subdirectory(include)
+add_subdirectory(tests)

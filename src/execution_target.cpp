@@ -34,7 +34,7 @@ libsbox::execution_target::execution_target(const std::vector<std::string> &argv
     this->init();
 }
 
-libsbox::execution_target::execution_target(int argc, const char **argv) {
+libsbox::execution_target::execution_target(int argc, char **argv) {
     if (argc == 0) libsbox::die("argv length must be at least 1");
     this->argv = new char *[argc + 1];
     for (int i = 0; i < argc; ++i) {
@@ -71,7 +71,7 @@ void libsbox::execution_target::prepare() {
     this->time_usage = 0;
     this->time_usage_sys = 0;
     this->time_usage_user = 0;
-    this->wall_time_usage = 0;
+    this->time_usage_wall = 0;
     this->memory_usage = 0;
 
     this->oom_killed = false;
@@ -81,6 +81,7 @@ void libsbox::execution_target::prepare() {
     this->exit_code = -1;
     this->signaled = false;
     this->term_signal = -1;
+    this->proxy_killed = false;
 
     this->cpuacct_controller = new cgroup_controller("cpuacct");
     this->memory_controller = new cgroup_controller("memory");

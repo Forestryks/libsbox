@@ -44,6 +44,6 @@ int main() {
     cout << "time_usage: " << solution_target->time_usage << endl;
     cout << "time_usage_sys: " << solution_target->time_usage_sys << endl;
     cout << "time_usage_user: " << solution_target->time_usage_user << endl;
-    cout << "wall_time_usage: " << solution_target->wall_time_usage << endl;
+    cout << "time_usage_wall: " << solution_target->time_usage_wall << endl;
     cout << "memory_usage: " << solution_target->memory_usage << endl;
 }

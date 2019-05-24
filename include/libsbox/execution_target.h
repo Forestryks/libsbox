@@ -98,7 +98,6 @@ public:
     long get_memory_usage();
     bool get_oom_status();
 
-
     [[noreturn]]
     void slave();
 };

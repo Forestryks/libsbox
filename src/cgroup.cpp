@@ -7,7 +7,6 @@
 #include <libsbox/die.h>
 #include <libsbox/conf.h>
 
-#include <iostream>
 #include <unistd.h>
 #include <cstring>
 #include <fcntl.h>
@@ -17,7 +16,6 @@ std::string libsbox::cgroup_controller::base_path = "/sys/fs/cgroup";
 libsbox::cgroup_controller::cgroup_controller(const std::string &name) {
     std::string prefix = join_path(base_path, name);
     this->path = join_path(prefix, make_temp_dir(prefix));
-    std::cout << this->path << std::endl;
 }
 
 libsbox::cgroup_controller::~cgroup_controller() {

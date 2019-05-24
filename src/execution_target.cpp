@@ -11,7 +11,6 @@
 #include <libsbox/signal.h>
 
 #include <cstring>
-#include <iostream>
 #include <unistd.h>
 #include <signal.h>
 #include <string>
@@ -23,7 +22,6 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <grp.h>
-#include <sstream>
 
 // TODO: destructor
 libsbox::execution_target::execution_target(const std::vector<std::string> &argv) {
@@ -417,7 +415,7 @@ void libsbox::execution_target::setup_credentials() {
 [[noreturn]]
 void libsbox::execution_target::slave() {
     this->inside_box = true;
-    this->exec_fd = open(this->argv[0], O_RDONLY);
+    this->exec_fd = open(this->argv[0], O_RDONLY | O_CLOEXEC);
     if (exec_fd < 0) {
         libsbox::die("Cannot open target executable");
     }

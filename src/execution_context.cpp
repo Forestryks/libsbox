@@ -79,8 +79,6 @@ void libsbox::execution_context::destroy_pipes() {
     }
 }
 
-#include <iostream>
-
 void libsbox::execution_context::reset_wall_clock() {
     gettimeofday(&this->run_start, nullptr);
 }
@@ -103,7 +101,6 @@ void libsbox::execution_context::run() {
 
     for (auto target : this->targets) {
         target->start_proxy();
-        std::cout << target->proxy_pid << std::endl;
     }
 
     if (close(this->error_pipe[1]) != 0) {

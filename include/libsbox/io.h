@@ -6,7 +6,6 @@
 #define LIBSBOX_IO_H
 
 #include <string>
-#include <vector>
 
 namespace libsbox {
     class io_stream {
@@ -27,18 +26,6 @@ namespace libsbox {
         in_stream *read_end;
         int extra_flags;
     };
-
-//    struct io_infile {
-//        std::string filename;
-//        in_stream *stream;
-//        int extra_flags;
-//    };
-//
-//    struct io_outfile {
-//        out_stream *stream;
-//        std::string filename;
-//        int extra_flags;
-//    };
 } // namespace libsbox
 
 #endif //LIBSBOX_IO_H

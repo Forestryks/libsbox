@@ -222,6 +222,7 @@ void libsbox::execution_target::copy_out() {
             libsbox::die("Cannot copy file from sandbox: %s is directory", inside.c_str());
         }
 
+        // TODO: rules?
         make_file(outside, 0755, 0666);
         copy_file(inside, outside, 0666);
     }

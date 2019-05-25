@@ -13,7 +13,6 @@ namespace libsbox {
 
 class libsbox::cgroup_controller {
 public:
-    static std::string base_path;
     std::string path;
 
     void die();

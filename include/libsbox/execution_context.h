@@ -17,30 +17,29 @@ namespace libsbox {
     extern execution_context *current_context;
 } // namespace libsbox
 
+// TODO: destructor
 class libsbox::execution_context {
-public:
-    long wall_time_limit = -1;
+private:
     int error_pipe[2];
-
     std::vector<execution_target *> targets;
-
     std::vector<io_pipe> pipes;
+    struct timeval run_start = {};
 
     void create_pipes();
-
     void destroy_pipes();
-
-    void register_target(execution_target *);
-
-    void link(out_stream *, in_stream *, int pipe_flags = 0);
-
-    void run();
-
     void die();
 
-    struct timeval run_start = {};
     void reset_wall_clock();
     long get_wall_clock();
+
+    friend void die(const char *msg, ...);
+    friend class execution_target;
+public:
+    long wall_time_limit = -1;
+
+    void register_target(execution_target *);
+    void link(out_stream *, in_stream *, int pipe_flags = 0);
+    void run();
 };
 
 #endif //LIBSBOX_EXECUTION_CONTEXT_H

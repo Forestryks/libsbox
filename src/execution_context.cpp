@@ -146,7 +146,6 @@ void libsbox::execution_context::run() {
             continue;
         }
 
-        // TODO: -1 in reads, writes and printfs
         int size = read(error_pipe[0], err_buf, err_buf_size - 1);
         if (size > 0) {
             err_buf[size] = 0;

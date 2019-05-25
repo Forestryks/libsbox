@@ -127,7 +127,7 @@ void libsbox::copy_file(const std::string &source, const std::string &dest, int 
     struct stat stat_source = {};
     fstat(fd_source, &stat_source);
 
-    sendfile(fd_dest, fd_source, 0, stat_source.st_size);
+    sendfile(fd_dest, fd_source, nullptr, stat_source.st_size);
 
     if (close(fd_source) != 0) {
         libsbox::die("Copy %s -> %s failed: cannot close source file (%s)", source.c_str(), dest.c_str(), strerror(errno));

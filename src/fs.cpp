@@ -77,28 +77,6 @@ void libsbox::make_path(std::string path, int rules) {
     }
 }
 
-namespace libsbox {
-    static bool strict;
-
-    static int rmtree_handler(const char *path, const struct stat *st, int, struct FTW *) {
-        if (S_ISDIR(st->st_mode)) {
-            if (rmdir(path) < 0 && strict) {
-                die("Cannot remove directory %s (%s)", path, strerror(errno));
-            }
-        } else {
-            if (unlink(path) < 0 && strict) {
-                die("Cannot remove file %s (%s)", path, strerror(errno));
-            }
-        }
-        return 0;
-    }
-}
-
-int libsbox::rmtree(const std::string &path, bool is_strict) {
-    strict = is_strict;
-    return nftw(path.c_str(), rmtree_handler, 20, FTW_MOUNT | FTW_PHYS | FTW_DEPTH);
-}
-
 const int NAME_LEN = 15;
 const int NUM_TRIES = 10;
 const char ALPHA[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

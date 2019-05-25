@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <cstring>
 
-int target_main(int argc, char *argv[]) {
+int target_main(int, char *[]) {
     // not used
     return 0;
 }

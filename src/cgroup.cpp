@@ -35,7 +35,7 @@ void libsbox::cgroup_controller::write(std::string filename, const std::string &
         libsbox::die("Cg write failed: cannot open file %s (%s)", filename.c_str(), strerror(errno));
     }
 
-    if (::write(fd, data.c_str(), data.size()) != data.size()) {
+    if (::write(fd, data.c_str(), data.size()) != (int)data.size()) {
         libsbox::die("Cg write failed: cannot write to %s (%s)", filename.c_str(), strerror(errno));
     }
 

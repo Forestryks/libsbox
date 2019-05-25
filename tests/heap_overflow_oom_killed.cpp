@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <cstring>
 
-int target_main(int argc, char *argv[]) {
+int target_main(int, char *[]) {
     const int sz = 1024 * 1024;
     int *a = new int[sz]; // 4 MB
     memset(a, 0, sz * sizeof(int));

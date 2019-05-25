@@ -14,7 +14,7 @@ void inf_rec(int x) {
     inf_rec(x + 1);
 }
 
-int target_main(int argc, char *argv[]) {
+int target_main(int, char *[]) {
     inf_rec(0);
     return 0;
 }

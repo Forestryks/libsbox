@@ -15,6 +15,7 @@ namespace libsbox {
         BIND_COPY_OUT = 8
     };
 
+    // TODO: constructor
     struct bind_rule {
         std::string path;
         int flags;

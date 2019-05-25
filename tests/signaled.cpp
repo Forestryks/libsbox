@@ -11,6 +11,7 @@
 #include <csignal>
 
 int target_main(int argc, char *argv[]) {
+    assert(argc >= 3);
     int term_signal = strtol(argv[2], nullptr, 10);
     raise(term_signal);
     while(true);

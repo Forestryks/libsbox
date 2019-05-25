@@ -10,6 +10,7 @@
 #include <memory>
 
 int target_main(int argc, char *argv[]) {
+    assert(argc >= 3);
     int exit_code = strtol(argv[2], nullptr, 10);
     return exit_code;
 }

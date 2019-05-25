@@ -27,7 +27,7 @@
 libsbox::execution_target::execution_target(const std::vector<std::string> &argv) {
     if (argv.empty()) libsbox::die("argv length must be at least 1");
     this->argv = new char *[argv.size() + 1];
-    for (int i = 0; i < argv.size(); ++i) {
+    for (int i = 0; i < (int)argv.size(); ++i) {
         this->argv[i] = strdup(argv[i].c_str());
     }
     this->argv[argv.size()] = nullptr;
@@ -50,9 +50,9 @@ void libsbox::execution_target::init() {
     this->env = new char *[1];
     this->env[0] = nullptr;
 
-    this->bind_rules["/lib"] = {"/lib"};
+    this->bind_rules["/lib"] = {"/lib", 0};
     this->bind_rules["/lib64"] = {"/lib64", BIND_OPTIONAL};
-    this->bind_rules["/usr/lib"] = {"/usr/lib"};
+    this->bind_rules["/usr/lib"] = {"/usr/lib", 0};
     this->bind_rules["/usr/lib64"] = {"/usr/lib64", BIND_OPTIONAL};
 }
 
@@ -266,7 +266,7 @@ namespace libsbox {
     int clone_callback(void *);
 } // namespace libsbox
 
-int libsbox::clone_callback(void *arg) {
+int libsbox::clone_callback(void *) {
     return current_target->proxy();
 }
 

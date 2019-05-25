@@ -10,7 +10,7 @@
 #include <memory>
 #include <unistd.h>
 
-int target_main(int argc, char *argv[]) {
+int target_main(int, char *[]) {
     sleep(1000);
     return 0;
 }

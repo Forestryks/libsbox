@@ -112,7 +112,7 @@ void libsbox::execution_context::run() {
 
     int exited_cnt = 0;
     char err_buf[err_buf_size];
-    while (exited_cnt < this->targets.size()) {
+    while (exited_cnt < (int)this->targets.size()) {
         int stat;
         pid_t pid = wait(&stat);
         if (pid < 0) {

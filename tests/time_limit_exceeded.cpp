@@ -10,7 +10,7 @@
 #include <memory>
 #include <csignal>
 
-int target_main(int argc, char *argv[]) {
+int target_main(int, char *[]) {
     while(true);
 }
 

@@ -92,7 +92,7 @@ public:
 
     execution_target(int, char **);
     explicit execution_target(const std::vector<std::string> &);
-    ~execution_target() = default;
+    ~execution_target();
 };
 
 #endif //LIBSBOX_EXECUTION_TARGET_H

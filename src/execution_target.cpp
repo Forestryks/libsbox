@@ -23,7 +23,6 @@
 #include <sys/resource.h>
 #include <grp.h>
 
-// TODO: destructor
 libsbox::execution_target::execution_target(const std::vector<std::string> &argv) {
     if (argv.empty()) libsbox::die("argv length must be at least 1");
     this->argv = new char *[argv.size() + 1];
@@ -42,6 +41,18 @@ libsbox::execution_target::execution_target(int argc, char **argv) {
     }
     this->argv[argc] = nullptr;
     this->init();
+}
+
+libsbox::execution_target::~execution_target() {
+    for (char **ptr = this->argv; *ptr != nullptr; ++ptr) {
+        delete[] (*ptr);
+    }
+    delete[] (this->argv);
+
+    for (char **ptr = this->env; *ptr != nullptr; ++ptr) {
+        delete[] (*ptr);
+    }
+    delete[] (this->env);
 }
 
 void libsbox::execution_target::init() {

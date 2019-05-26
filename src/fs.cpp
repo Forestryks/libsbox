@@ -15,14 +15,13 @@
 #include <fcntl.h>
 #include <sys/sendfile.h>
 
-bool libsbox::path_exists(const std::string &path)  {
+int libsbox::get_file_type(const std::string &path) {
     struct stat st = {};
-    return stat(path.c_str(), &st) >= 0;
-}
-
-bool libsbox::dir_exists(const std::string &path)  {
-    struct stat st = {};
-    return (stat(path.c_str(), &st) >= 0 && S_ISDIR(st.st_mode));
+    if (stat(path.c_str(), &st) < 0) {
+        if (errno == ENOENT) return 0;
+        die("Cannot stat %s (%s)", path.c_str(), strerror(errno));
+    }
+    return (st.st_mode & S_IFMT);
 }
 
 void libsbox::make_file(std::string path, int rules, int file_rules) {
@@ -48,7 +47,8 @@ void libsbox::make_file(std::string path, int rules, int file_rules) {
         }
     }
 
-    if (!path_exists(path)) {
+    int file_type = get_file_type(path);
+    if (!S_ISREG(file_type)) {
         die("Cannot create file %s: file not created", path.c_str());
     }
 }
@@ -72,7 +72,8 @@ void libsbox::make_path(std::string path, int rules) {
         iter++;
     }
 
-    if (!dir_exists(path)) {
+    int file_type = get_file_type(path);
+    if (!S_ISDIR(file_type)) {
         die("Cannot create directory %s: directory not created", path.c_str());
     }
 }
@@ -137,3 +138,4 @@ void libsbox::copy_file(const std::string &source, const std::string &dest, int 
         libsbox::die("Copy %s -> %s failed: cannot close destination file (%s)", source.c_str(), dest.c_str(), strerror(errno));
     }
 }
+

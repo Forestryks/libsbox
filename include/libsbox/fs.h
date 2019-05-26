@@ -19,8 +19,7 @@ namespace libsbox {
         return path1 + "/" + path2;
     }
 
-    bool path_exists(const std::string &);
-    bool dir_exists(const std::string &);
+    int get_file_type(const std::string &path);
     void make_path(std::string, int rules = 0755);
     void make_file(std::string, int rules = 0755, int file_rules = 0644);
     int rmtree(const std::string &, bool is_strict = true);

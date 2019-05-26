@@ -153,12 +153,13 @@ void libsbox::execution_target::prepare_root() {
 
         if ((flags & BIND_COPY_OUT) && !(flags & BIND_COPY_IN)) continue;
 
-        if (!path_exists(outside)) {
+        int file_type = get_file_type(outside);
+        if (!file_type) {
             if (flags & BIND_OPTIONAL) continue;
             libsbox::die("Bind %s -> %s failed: path not exists", outside.c_str(), rule.first.c_str());
         }
 
-        if (dir_exists(outside)) {
+        if (S_ISDIR(file_type)) {
             // working with dir
             if (flags & (BIND_COPY_IN | BIND_COPY_OUT)) {
                 libsbox::die("BIND_COPY_* are not compatible with directories");
@@ -179,7 +180,7 @@ void libsbox::execution_target::prepare_root() {
                 libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
                              strerror(errno));
             }
-        } else {
+        } else if (S_ISREG(file_type)) {
             // working with file
             if (flags & BIND_COPY_IN) {
                 // TODO: ???
@@ -205,6 +206,8 @@ void libsbox::execution_target::prepare_root() {
                 libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
                              strerror(errno));
             }
+        } else {
+            libsbox::die("%s is neither directory nor regular file", outside.c_str());
         }
     }
 }
@@ -223,17 +226,18 @@ void libsbox::execution_target::copy_out() {
 
         if (!(flags & BIND_COPY_OUT)) continue;
 
-        if (!path_exists(inside)) {
+        int file_type = get_file_type(outside);
+        if (!file_type) {
             if (flags & BIND_OPTIONAL) continue;
             libsbox::die("Cannot copy file from sandbox: %s not exists", inside.c_str());
         }
-        // TODO: don't check for directory, check for regular file
-        if (dir_exists(inside)) {
+
+        if (!S_ISREG(file_type)) {
             if (flags & BIND_OPTIONAL) continue;
-            libsbox::die("Cannot copy file from sandbox: %s is directory", inside.c_str());
+            libsbox::die("Cannot copy file from sandbox: %s is not regular file", inside.c_str());
         }
 
-        // TODO: rules?
+        // What rules should be used here?
         make_file(outside, 0755, 0666);
         copy_file(inside, outside, 0666);
     }

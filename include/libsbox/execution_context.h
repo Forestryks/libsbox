@@ -17,7 +17,6 @@ namespace libsbox {
     extern execution_context *current_context;
 } // namespace libsbox
 
-// TODO: destructor
 class libsbox::execution_context {
 private:
     int error_pipe[2];

@@ -45,12 +45,13 @@ libsbox::execution_target::execution_target(int argc, char **argv) {
 
 libsbox::execution_target::~execution_target() {
     for (char **ptr = this->argv; *ptr != nullptr; ++ptr) {
-        delete[] (*ptr);
+        // We use free() because memory was allocated in strdup() using malloc()
+        free(*ptr);
     }
     delete[] (this->argv);
 
     for (char **ptr = this->env; *ptr != nullptr; ++ptr) {
-        delete[] (*ptr);
+        free(*ptr);
     }
     delete[] (this->env);
 }
@@ -120,7 +121,7 @@ void libsbox::execution_target::cleanup() {
 }
 
 void libsbox::execution_target::prepare_root() {
-    if (mount(nullptr, "/", nullptr, MS_REC | MS_PRIVATE, nullptr) < 0) {
+    if (mount("none", "/", "none", MS_REC | MS_PRIVATE, nullptr) < 0) {
         libsbox::die("Cannot privatize mounts (%s)", strerror(errno));
     }
 
@@ -183,7 +184,7 @@ void libsbox::execution_target::prepare_root() {
         } else if (S_ISREG(file_type)) {
             // working with file
             if (flags & BIND_COPY_IN) {
-                // TODO: ???
+                // What rules should be used here?
                 make_file(inside, 0755, 0666);
                 if (flags & BIND_READWRITE) copy_file(outside, inside, 0666);
                 else copy_file(outside, inside, 0644);
@@ -380,6 +381,7 @@ void libsbox::execution_target::close_all_fds() {
         char *end;
         long fd = strtol(dentry->d_name, &end, 10);
         if (*end) continue;
+
         if ((fd >= 0 && fd <= 2) || fd == dir_fd || fd == current_context->error_pipe[1] ||
             fd == this->exec_fd)
             continue;

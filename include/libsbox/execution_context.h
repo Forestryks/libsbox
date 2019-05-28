@@ -17,7 +17,14 @@ namespace libsbox {
     extern execution_context *current_context;
 } // namespace libsbox
 
+// TODO: swap private/public
 class libsbox::execution_context {
+public:
+    long wall_time_limit = -1;
+
+    void register_target(execution_target *);
+    void link(out_stream *, in_stream *, int pipe_flags = 0);
+    void run();
 private:
     int error_pipe[2];
     std::vector<execution_target *> targets;
@@ -33,12 +40,6 @@ private:
 
     friend void die(const char *msg, ...);
     friend class execution_target;
-public:
-    long wall_time_limit = -1;
-
-    void register_target(execution_target *);
-    void link(out_stream *, in_stream *, int pipe_flags = 0);
-    void run();
 };
 
 #endif //LIBSBOX_EXECUTION_CONTEXT_H

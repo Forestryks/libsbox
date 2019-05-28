@@ -43,19 +43,7 @@ libsbox::execution_target::execution_target(int argc, char **argv) {
     this->init();
 }
 
-libsbox::execution_target::~execution_target() {
-    for (char **ptr = this->argv; *ptr != nullptr; ++ptr) {
-        // We use free() because memory was allocated in strdup() using malloc()
-        free(*ptr);
-    }
-    delete[] (this->argv);
-
-    for (char **ptr = this->env; *ptr != nullptr; ++ptr) {
-        free(*ptr);
-    }
-    delete[] (this->env);
-}
-
+// TODO: initialized check in context
 void libsbox::execution_target::init() {
     if (!initialized) libsbox::die("Cannot create execution_target while not initialized");
 
@@ -66,6 +54,20 @@ void libsbox::execution_target::init() {
     this->bind_rules["/lib64"] = {"/lib64", BIND_OPTIONAL};
     this->bind_rules["/usr/lib"] = {"/usr/lib", 0};
     this->bind_rules["/usr/lib64"] = {"/usr/lib64", BIND_OPTIONAL};
+}
+
+libsbox::execution_target::~execution_target() {
+    for (char **ptr = this->argv; *ptr != nullptr; ++ptr) {
+        // We use free() because memory was allocated in strdup() using malloc()
+        // TODO: error check
+        free(*ptr);
+    }
+    delete[] (this->argv);
+
+    for (char **ptr = this->env; *ptr != nullptr; ++ptr) {
+        free(*ptr);
+    }
+    delete[] (this->env);
 }
 
 void libsbox::execution_target::die() {
@@ -125,7 +127,7 @@ void libsbox::execution_target::prepare_root() {
         libsbox::die("Cannot privatize mounts (%s)", strerror(errno));
     }
 
-    std::string param = "mode=755,size=" + std::to_string(root_tmpfs_size);
+    std::string param = "mode=755,size=" + std::to_string(root_tmpfs_size) + "k";
     if (mount("none", this->id.c_str(), "tmpfs", 0, param.c_str()) < 0) {
         libsbox::die("Cannot mount tmpfs (%s)", strerror(errno));
     }
@@ -210,6 +212,7 @@ void libsbox::execution_target::prepare_root() {
         } else {
             libsbox::die("%s is neither directory nor regular file", outside.c_str());
         }
+        // TODO: FIFO
     }
 }
 
@@ -227,7 +230,7 @@ void libsbox::execution_target::copy_out() {
 
         if (!(flags & BIND_COPY_OUT)) continue;
 
-        int file_type = get_file_type(outside);
+        int file_type = get_file_type(inside);
         if (!file_type) {
             if (flags & BIND_OPTIONAL) continue;
             libsbox::die("Cannot copy file from sandbox: %s not exists", inside.c_str());
@@ -288,9 +291,8 @@ int libsbox::clone_callback(void *) {
 }
 
 void libsbox::execution_target::start_proxy() {
-    current_target = this;
-
     char *clone_stack = new char[clone_stack_size];
+    current_target = this;
     // CLONE_NEWIPC and CLONE_NEWNS are dramatically slow
     // I don't know why
     this->proxy_pid = clone(
@@ -299,9 +301,9 @@ void libsbox::execution_target::start_proxy() {
             SIGCHLD | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID,
             nullptr
     );
+    current_target = nullptr;
     delete[] clone_stack;
 
-    current_target = nullptr;
     if (this->proxy_pid < 0) {
         libsbox::die("Cannot create proxy: fork failed (%s)", strerror(errno));
     }
@@ -312,6 +314,7 @@ void libsbox::execution_target::start_proxy() {
 }
 
 void libsbox::execution_target::freopen_fds() {
+    // TODO: rules
     if (!this->stdin.filename.empty()) {
         this->stdin.fd = open(this->stdin.filename.c_str(), O_RDONLY);
         if (this->stdin.fd < 0) {
@@ -409,6 +412,7 @@ void libsbox::execution_target::setup_rlimits() {
         set_rlimit(RLIMIT_FSIZE, this->fsize_limit);
     }
 
+    // TODO: increase stack limit
     set_rlimit(RLIMIT_NOFILE, this->max_files);
     set_rlimit(RLIMIT_NPROC, this->max_threads);
     set_rlimit(RLIMIT_MEMLOCK, 0);
@@ -482,6 +486,7 @@ long libsbox::execution_target::get_memory_usage() {
     return std::max(max_usage, cur_usage) / 1024;
 }
 
+// TODO: order
 bool libsbox::execution_target::get_oom_status() {
     std::string data = this->memory_controller->read("memory.oom_control");
     std::string res;

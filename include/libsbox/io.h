@@ -9,15 +9,15 @@
 
 namespace libsbox {
     class io_stream {
+    public:
+        void freopen(const std::string &filename);
+        void reset();
     private:
         int fd = -1;
         std::string filename;
 
         friend class execution_context;
         friend class execution_target;
-    public:
-        void freopen(const std::string &filename);
-        void reset();
     };
 
     class in_stream : public io_stream {};

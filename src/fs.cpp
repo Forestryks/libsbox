@@ -40,6 +40,7 @@ void libsbox::make_file(std::string path, int rules, int file_rules) {
             *iter = '/';
             iter++;
         } else {
+            // TODO: fd
             if (creat(path.c_str(), file_rules) < 0) {
                 die("Cannot create file %s (%s)", path.c_str(), strerror(errno));
             }
@@ -90,6 +91,7 @@ std::string libsbox::make_temp_dir(std::string prefix, int rules) {
     if (prefix.empty()) {
         prefix = ".";
     }
+    // TODO: static
     std::random_device rd;
     std::mt19937 mt(rd());
 
@@ -103,6 +105,7 @@ std::string libsbox::make_temp_dir(std::string prefix, int rules) {
         }
         std::string path = join_path(prefix, name);
 
+        // TODO: get_file_type
         struct stat st = {};
 
         if (stat(path.c_str(), &st) == 0 || errno != ENOENT) continue;
@@ -138,4 +141,3 @@ void libsbox::copy_file(const std::string &source, const std::string &dest, int 
         libsbox::die("Copy %s -> %s failed: cannot close destination file (%s)", source.c_str(), dest.c_str(), strerror(errno));
     }
 }
-

@@ -40,8 +40,8 @@ namespace libsbox {
             {SIGALRM, SIGACTION_INTERRUPT}
     };
 }
-
 int libsbox::interrupt_signal;
+
 
 namespace libsbox {
     void sigaction_interrupt_handler(int signum) {
@@ -53,6 +53,7 @@ namespace libsbox {
     }
 }
 
+// TODO: rename
 void libsbox::disable_signals() {
     struct sigaction sigaction_interrupt = {},
             sigaction_terminate = {},

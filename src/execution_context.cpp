@@ -90,6 +90,8 @@ long libsbox::execution_context::get_wall_clock() {
     return seg.tv_sec * 1000 + seg.tv_usec / 1000;
 }
 
+#include <iostream>
+
 void libsbox::execution_context::run() {
     current_context = this;
 
@@ -146,7 +148,7 @@ void libsbox::execution_context::run() {
             continue;
         }
 
-        int size = read(error_pipe[0], err_buf, err_buf_size - 1);
+        int size = read(this->error_pipe[0], err_buf, err_buf_size - 1);
         if (size > 0) {
             err_buf[size] = 0;
             libsbox::die("%s", err_buf);
@@ -155,6 +157,7 @@ void libsbox::execution_context::run() {
         execution_target *exited_target = nullptr;
         for (auto target : this->targets) {
             if (target->proxy_pid == pid) {
+                if (!target->running) continue;
                 exited_target = target;
                 exited_cnt++;
                 break;
@@ -182,6 +185,8 @@ void libsbox::execution_context::run() {
                 exited_target->term_signal = WTERMSIG(stat);
             }
         }
+
+        // TODO: check for time limit
 
         exited_target->time_usage_wall = this->get_wall_clock();
         exited_target->time_usage = exited_target->get_time_usage();

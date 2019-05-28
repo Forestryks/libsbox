@@ -20,6 +20,38 @@ namespace libsbox {
 } // namespace libsbox
 
 class libsbox::execution_target {
+public:
+    long time_limit = -1;
+    long memory_limit = -1;
+    long fsize_limit = -1;
+    unsigned max_files = 64;
+    unsigned max_threads = 1;
+
+    in_stream stdin;
+    out_stream stdout, stderr;
+
+    std::map<std::string, bind_rule> bind_rules;
+
+    // stats
+    // TODO: privatize
+    bool running = false;
+    long time_usage = 0;
+    long time_usage_sys = 0;
+    long time_usage_user = 0;
+    long time_usage_wall = 0;
+    long memory_usage = 0;
+
+    bool time_limit_exceeded = false;
+    bool wall_time_limit_exceeded = false;
+    bool exited = false;
+    int exit_code = -1;
+    bool signaled = false;
+    int term_signal = -1;
+    bool oom_killed = false;
+
+    execution_target(int, char **);
+    explicit execution_target(const std::vector<std::string> &);
+    ~execution_target();
 private:
     char **argv = nullptr;
     char **env = nullptr;
@@ -62,37 +94,6 @@ private:
     friend int clone_callback(void *);
     friend void die(const char *msg, ...);
     friend class execution_context;
-public:
-    long time_limit = -1;
-    long memory_limit = -1;
-    long fsize_limit = -1;
-    unsigned max_files = 64;
-    unsigned max_threads = 1;
-
-    in_stream stdin;
-    out_stream stdout, stderr;
-
-    std::map<std::string, bind_rule> bind_rules;
-
-    // stats
-    bool running = false;
-    long time_usage = 0;
-    long time_usage_sys = 0;
-    long time_usage_user = 0;
-    long time_usage_wall = 0;
-    long memory_usage = 0;
-
-    bool time_limit_exceeded = false;
-    bool wall_time_limit_exceeded = false;
-    bool exited = false;
-    int exit_code = -1;
-    bool signaled = false;
-    int term_signal = -1;
-    bool oom_killed = false;
-
-    execution_target(int, char **);
-    explicit execution_target(const std::vector<std::string> &);
-    ~execution_target();
 };
 
 #endif //LIBSBOX_EXECUTION_TARGET_H

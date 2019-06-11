@@ -28,13 +28,13 @@ void libsbox::die(const char *msg, ...) {
 
         if (current_context != nullptr) current_context->die();
     } else {
-        char err_buf2[err_buf_size];
+        char err_buf2[err_buf_size + 9];
         if (current_target->inside_box) {
             // We are in target
-            snprintf(err_buf2, err_buf_size, "[slave] %s", err_buf);
+            snprintf(err_buf2, err_buf_size + 9, "[slave] %s", err_buf);
         } else {
             // We are in proxy
-            snprintf(err_buf2, err_buf_size, "[proxy] %s", err_buf);
+            snprintf(err_buf2, err_buf_size + 9, "[proxy] %s", err_buf);
         }
 
         write(current_context->error_pipe[1], err_buf2, strlen(err_buf2));

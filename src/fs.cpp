@@ -40,9 +40,12 @@ void libsbox::make_file(std::string path, int rules, int file_rules) {
             *iter = '/';
             iter++;
         } else {
-            // TODO: fd
-            if (creat(path.c_str(), file_rules) < 0) {
+            int fd = creat(path.c_str(), file_rules);
+            if (fd < 0) {
                 die("Cannot create file %s (%s)", path.c_str(), strerror(errno));
+            }
+            if (close(fd) != 0) {
+                die("Cannot create file %s: failed to close fd (%s)", path.c_str(), strerror(errno));
             }
             break;
         }

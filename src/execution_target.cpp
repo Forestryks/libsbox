@@ -486,7 +486,6 @@ long libsbox::execution_target::get_memory_usage() {
     return std::max(max_usage, cur_usage) / 1024;
 }
 
-// TODO: order
 bool libsbox::execution_target::get_oom_status() {
     std::string data = this->memory_controller->read("memory.oom_control");
     std::stringstream sstream(this->memory_controller->read("memory.oom_control"));

@@ -33,8 +33,6 @@ public:
     std::map<std::string, bind_rule> bind_rules;
 
     // stats
-    // TODO: privatize
-    bool running = false;
     long time_usage = 0;
     long time_usage_sys = 0;
     long time_usage_user = 0;
@@ -65,6 +63,7 @@ private:
     bool inside_box = false;
     int exec_fd = -1;
     bool proxy_killed = false;
+    bool running = false;
 
     void init();
     void die();

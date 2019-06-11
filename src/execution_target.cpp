@@ -144,6 +144,7 @@ void libsbox::execution_target::prepare_root() {
     std::string work_dir = join_path(this->id, "work");
     make_path(work_dir, 0777);
 
+    // TODO: restrict bind copy rules for FIFOs
     for (const auto &rule : this->bind_rules) {
         std::string inside, outside;
         if (rule.first[0] == '/') {

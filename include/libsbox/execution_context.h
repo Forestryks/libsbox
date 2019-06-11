@@ -17,7 +17,6 @@ namespace libsbox {
     extern execution_context *current_context;
 } // namespace libsbox
 
-// TODO: swap private/public
 class libsbox::execution_context {
 public:
     long wall_time_limit = -1;

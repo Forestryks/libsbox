@@ -94,9 +94,9 @@ std::string libsbox::make_temp_dir(std::string prefix, int rules) {
     if (prefix.empty()) {
         prefix = ".";
     }
-    // TODO: static
-    std::random_device rd;
-    std::mt19937 mt(rd());
+
+    static std::random_device rd;
+    static std::mt19937 mt(rd());
 
     int tries = 0;
     std::string name;

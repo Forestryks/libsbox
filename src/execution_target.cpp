@@ -43,7 +43,6 @@ libsbox::execution_target::execution_target(int argc, char **argv) {
     this->init();
 }
 
-// TODO: initialized check in context
 void libsbox::execution_target::init() {
     if (!initialized) libsbox::die("Cannot create execution_target while not initialized");
 
@@ -59,7 +58,6 @@ void libsbox::execution_target::init() {
 libsbox::execution_target::~execution_target() {
     for (char **ptr = this->argv; *ptr != nullptr; ++ptr) {
         // We use free() because memory was allocated in strdup() using malloc()
-        // TODO: error check
         free(*ptr);
     }
     delete[] (this->argv);
@@ -413,7 +411,7 @@ void libsbox::execution_target::setup_rlimits() {
         set_rlimit(RLIMIT_FSIZE, this->fsize_limit);
     }
 
-    // TODO: increase stack limit
+    set_rlimit(RLIMIT_STACK, this->memory_limit * 1024);
     set_rlimit(RLIMIT_NOFILE, this->max_files);
     set_rlimit(RLIMIT_NPROC, this->max_threads);
     set_rlimit(RLIMIT_MEMLOCK, 0);

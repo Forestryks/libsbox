@@ -22,6 +22,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <grp.h>
+#include <sstream>
 
 libsbox::execution_target::execution_target(const std::vector<std::string> &argv) {
     if (argv.empty()) libsbox::die("argv length must be at least 1");
@@ -488,15 +489,14 @@ long libsbox::execution_target::get_memory_usage() {
 // TODO: order
 bool libsbox::execution_target::get_oom_status() {
     std::string data = this->memory_controller->read("memory.oom_control");
-    std::string res;
-    for (auto ch : data) {
-        if (ch == ' ') {
-            res.clear();
-        } else {
-            res.push_back(ch);
+    std::stringstream sstream(this->memory_controller->read("memory.oom_control"));
+    std::string name, val;
+    while (sstream >> name >> val) {
+        if (name == "oom_kill") {
+            return (val != "0");
         }
     }
-    return stoi(res);
+    libsbox::die("Can't find oom_kill field in memory.oom_control");
 }
 
 namespace libsbox {

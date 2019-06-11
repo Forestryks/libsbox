@@ -108,10 +108,8 @@ std::string libsbox::make_temp_dir(std::string prefix, int rules) {
         }
         std::string path = join_path(prefix, name);
 
-        // TODO: get_file_type
-        struct stat st = {};
-
-        if (stat(path.c_str(), &st) == 0 || errno != ENOENT) continue;
+        int file_type = get_file_type(path);
+        if (file_type) continue;
 
         make_path(path, rules);
         return name;

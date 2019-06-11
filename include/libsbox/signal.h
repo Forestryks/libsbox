@@ -6,7 +6,7 @@
 #define LIBSBOX_SIGNAL_H
 
 namespace libsbox {
-    void disable_signals();
+    void prepare_signals();
     void reset_signals();
 
     void start_timer(long interval);

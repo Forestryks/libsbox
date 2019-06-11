@@ -53,8 +53,7 @@ namespace libsbox {
     }
 }
 
-// TODO: rename
-void libsbox::disable_signals() {
+void libsbox::prepare_signals() {
     struct sigaction sigaction_interrupt = {},
             sigaction_terminate = {},
             sigaction_ignore = {};

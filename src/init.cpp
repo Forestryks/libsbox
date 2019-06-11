@@ -23,13 +23,12 @@ void libsbox::init(void (*fatal_error_handler)(const char *)) {
     });
 
     init_credentials();
-    disable_signals();
+    prepare_signals();
 
     initialized = true;
 }
 
 void libsbox::init_credentials() {
-    // TODO: fix
     if (geteuid() != 0) die("Must be started as root");
 
     // May be unnecessary

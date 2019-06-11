@@ -48,7 +48,7 @@ int invoke_main(int argc, char *argv[]) {
     std::cout << "time_usage: " << target->time_usage << std::endl;
     std::cout << "time_usage_sys: " << target->time_usage_sys << std::endl;
     std::cout << "time_usage_user: " << target->time_usage_user << std::endl;
-    std::cout << "time_usage_wall: " << target->time_usage_wall << std::endl;
+    std::cout << "wall_time_usage: " << target->wall_time_usage << std::endl;
     std::cout << "memory_usage: " << target->memory_usage << std::endl;
 
     int term_signal = strtol(argv[2], nullptr, 10);
@@ -63,7 +63,7 @@ int invoke_main(int argc, char *argv[]) {
 //    assert(target->time_usage);
 //    assert(target->time_usage_sys);
 //    assert(target->time_usage_user);
-//    assert(target->time_usage_wall);
+//    assert(target->wall_time_usage);
 //    assert(target->memory_usage);
 
     return 0;

@@ -186,14 +186,18 @@ void libsbox::execution_context::run() {
             }
         }
 
-        // TODO: check for time limit
-
-        exited_target->time_usage_wall = this->get_wall_clock();
+        exited_target->wall_time_usage = this->get_wall_clock();
         exited_target->time_usage = exited_target->get_time_usage();
         exited_target->time_usage_sys = exited_target->get_time_usage_sys();
         exited_target->time_usage_user = exited_target->get_time_usage_user();
         exited_target->memory_usage = exited_target->get_memory_usage();
         exited_target->oom_killed = exited_target->get_oom_status();
+        if (exited_target->time_limit != -1) {
+            exited_target->time_limit_exceeded = (exited_target->time_usage > exited_target->time_limit);
+        }
+        if (this->wall_time_limit != -1) {
+            exited_target->wall_time_limit_exceeded = (exited_target->wall_time_usage > this->wall_time_limit);
+        }
     }
 
     stop_timer();

@@ -85,7 +85,7 @@ void libsbox::execution_target::prepare() {
     this->time_usage = 0;
     this->time_usage_sys = 0;
     this->time_usage_user = 0;
-    this->time_usage_wall = 0;
+    this->wall_time_usage = 0;
     this->memory_usage = 0;
 
     this->oom_killed = false;

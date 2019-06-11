@@ -36,7 +36,7 @@ public:
     long time_usage = 0;
     long time_usage_sys = 0;
     long time_usage_user = 0;
-    long time_usage_wall = 0;
+    long wall_time_usage = 0;
     long memory_usage = 0;
 
     bool time_limit_exceeded = false;

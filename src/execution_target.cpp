@@ -143,7 +143,6 @@ void libsbox::execution_target::prepare_root() {
     std::string work_dir = join_path(this->id, "work");
     make_path(work_dir, 0777);
 
-    // TODO: restrict bind copy rules for FIFOs
     for (const auto &rule : this->bind_rules) {
         std::string inside, outside;
         if (rule.first[0] == '/') {
@@ -183,7 +182,10 @@ void libsbox::execution_target::prepare_root() {
                 libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
                              strerror(errno));
             }
-        } else if (S_ISREG(file_type)) {
+        } else if (S_ISREG(file_type) || S_ISFIFO(file_type)) {
+            if (S_ISFIFO(file_type) && (flags & BIND_COPY_IN)) {
+                libsbox::die("BIND_COPY_* are not compatible with FIFOs");
+            }
             // working with file
             if (flags & BIND_COPY_IN) {
                 // What rules should be used here?
@@ -212,7 +214,6 @@ void libsbox::execution_target::prepare_root() {
         } else {
             libsbox::die("%s is neither directory nor regular file", outside.c_str());
         }
-        // TODO: FIFO
     }
 }
 

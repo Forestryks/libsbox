@@ -38,10 +38,11 @@ void libsbox::execution_context::create_pipes() {
         pipe.write_end->fd = fd[1];
         pipe.read_end->fd = fd[0];
 
-        if (fcntl(fd[1], F_SETPIPE_SZ, pipe_size) < pipe_size) {
-            libsbox::die("Cannot increase pipe capacity to %i bytes (%s)", pipe_size,
-                         strerror(errno));
-        }
+        // we won't change pipe size while it's not proved that it is not harmful
+//        if (fcntl(fd[1], F_SETPIPE_SZ, pipe_size) < pipe_size) {
+//            libsbox::die("Cannot increase pipe capacity to %i bytes (%s)", pipe_size,
+//                         strerror(errno));
+//        }
     }
 
     if (pipe2(this->error_pipe, O_NONBLOCK | O_DIRECT | O_CLOEXEC) != 0) {

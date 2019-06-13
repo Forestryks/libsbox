@@ -122,6 +122,7 @@ void libsbox::execution_target::cleanup() {
 }
 
 void libsbox::execution_target::prepare_root() {
+    umask(0);
     if (mount("none", "/", "none", MS_REC | MS_PRIVATE, nullptr) < 0) {
         libsbox::die("Cannot privatize mounts (%s)", strerror(errno));
     }
@@ -163,8 +164,9 @@ void libsbox::execution_target::prepare_root() {
 
         if (S_ISDIR(file_type)) {
             // working with dir
-            if (flags & (BIND_COPY_IN | BIND_COPY_OUT)) {
-                libsbox::die("BIND_COPY_* are not compatible with directories");
+            if (flags & BIND_COPY_IN) {
+                libsbox::die("Bind %s -> %s failed: BIND_COPY_IN is not compatible with directories", outside.c_str(),
+                             rule.first.c_str());
             }
 
             make_path(inside, 0777);
@@ -182,21 +184,19 @@ void libsbox::execution_target::prepare_root() {
                 libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
                              strerror(errno));
             }
-        } else if (S_ISREG(file_type) || S_ISFIFO(file_type)) {
-            if (S_ISFIFO(file_type) && (flags & BIND_COPY_IN)) {
-                libsbox::die("BIND_COPY_* are not compatible with FIFOs");
-            }
-            // working with file
+        } else  {
             if (flags & BIND_COPY_IN) {
-                // What rules should be used here?
-                make_file(inside, 0755, 0666);
+                if (!S_ISREG(file_type)) {
+                    libsbox::die("BIND_COPY_* are not compatible with FIFOs");
+                }
+                make_file(inside, 0777, 0666);
                 if (flags & BIND_READWRITE) copy_file(outside, inside, 0666);
                 else copy_file(outside, inside, 0644);
                 continue;
             }
             if (flags & BIND_COPY_OUT) continue;
 
-            make_file(inside, 0755, 0666);
+            make_file(inside, 0777, 0666);
 
             unsigned long mount_flags = (MS_BIND | MS_NOSUID);
             if (!(flags & BIND_READWRITE)) {
@@ -211,10 +211,9 @@ void libsbox::execution_target::prepare_root() {
                 libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
                              strerror(errno));
             }
-        } else {
-            libsbox::die("%s is neither directory nor regular file", outside.c_str());
         }
     }
+    umask(022);
 }
 
 void libsbox::execution_target::copy_out() {
@@ -242,9 +241,8 @@ void libsbox::execution_target::copy_out() {
             libsbox::die("Cannot copy file from sandbox: %s is not regular file", inside.c_str());
         }
 
-        // What rules should be used here?
-        make_file(outside, 0755, 0666);
-        copy_file(inside, outside, 0666);
+        make_file(outside, 0755, 0644);
+        copy_file(inside, outside, 0644);
     }
 }
 

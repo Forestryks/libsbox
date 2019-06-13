@@ -285,22 +285,21 @@ namespace libsbox {
     int clone_callback(void *);
 } // namespace libsbox
 
-int libsbox::clone_callback(void *) {
+int libsbox::clone_callback(void *target) {
+    current_target = (execution_target*)target;
     return current_target->proxy();
 }
 
 void libsbox::execution_target::start_proxy() {
     char *clone_stack = new char[clone_stack_size];
-    current_target = this;
     // CLONE_NEWIPC and CLONE_NEWNS are dramatically slow
     // I don't know why
     this->proxy_pid = clone(
             clone_callback,
             clone_stack + clone_stack_size,
             SIGCHLD | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID,
-            nullptr
+            this
     );
-    current_target = nullptr;
     delete[] clone_stack;
 
     if (this->proxy_pid < 0) {

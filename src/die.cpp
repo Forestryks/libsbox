@@ -30,7 +30,7 @@ void libsbox::die(const char *msg, ...) {
     } else {
         char err_buf2[err_buf_size + 9];
         if (current_target->inside_box) {
-            // We are in target
+            // We are in slave
             snprintf(err_buf2, err_buf_size + 9, "[slave] %s", err_buf);
         } else {
             // We are in proxy

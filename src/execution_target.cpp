@@ -116,9 +116,9 @@ void libsbox::execution_target::cleanup() {
     this->proxy_pid = 0;
     this->slave_pid = 0;
 
-    if (rmdir(this->id.c_str()) != 0) {
-        libsbox::die("Cannot remove dir %s (%s)", this->id.c_str(), strerror(errno));
-    }
+   if (rmdir(this->id.c_str()) != 0) {
+       libsbox::die("Cannot remove dir %s (%s)", this->id.c_str(), strerror(errno));
+   }
 }
 
 void libsbox::execution_target::prepare_root() {
@@ -187,14 +187,14 @@ void libsbox::execution_target::prepare_root() {
         } else  {
             if (flags & BIND_COPY_IN) {
                 if (!S_ISREG(file_type)) {
-                    libsbox::die("BIND_COPY_* are not compatible with FIFOs");
+                    libsbox::die("Bind %s -> %s failed: BIND_COPY_IN is compatible only with regular files",
+                            outside.c_str(), rule.first.c_str());
                 }
                 make_file(inside, 0777, 0666);
                 if (flags & BIND_READWRITE) copy_file(outside, inside, 0666);
                 else copy_file(outside, inside, 0644);
                 continue;
             }
-            if (flags & BIND_COPY_OUT) continue;
 
             make_file(inside, 0777, 0666);
 
@@ -216,34 +216,35 @@ void libsbox::execution_target::prepare_root() {
     umask(022);
 }
 
-void libsbox::execution_target::copy_out() {
-    std::string work_dir = join_path(this->id, "work");
-    for (const auto &rule : this->bind_rules) {
-        std::string inside, outside;
-        if (rule.first[0] == '/') {
-            inside = join_path(this->id, rule.first);
-        } else {
-            inside = join_path(work_dir, rule.first);
-        }
-        outside = rule.second.path;
-        int flags = rule.second.flags;
+void libsbox::execution_target::destroy_root() {
+   std::string work_dir = join_path(this->id, "work");
+   for (auto &rule : this->bind_rules) {
+       std::string inside, outside;
+       if (rule.first[0] == '/') {
+           inside = join_path(this->id, rule.first);
+       } else {
+           inside = join_path(work_dir, rule.first);
+       }
+       outside = rule.second.path;
+       int flags = rule.second.flags;
 
-        if (!(flags & BIND_COPY_OUT)) continue;
+       if (!(flags & BIND_COPY_OUT)) continue;
 
-        int file_type = get_file_type(inside);
-        if (!file_type) {
-            if (flags & BIND_OPTIONAL) continue;
-            libsbox::die("Cannot copy file from sandbox: %s not exists", inside.c_str());
-        }
+       int file_type = get_file_type(inside);
+       if (!file_type) {
+           if (flags & BIND_OPTIONAL) continue;
+           libsbox::die("Copying out %s <- %s failed: path not exists", outside.c_str(), rule.first.c_str());
+       }
 
-        if (!S_ISREG(file_type)) {
-            if (flags & BIND_OPTIONAL) continue;
-            libsbox::die("Cannot copy file from sandbox: %s is not regular file", inside.c_str());
-        }
+       if (!S_ISREG(file_type)) {
+           if (flags & BIND_OPTIONAL) continue;
+           libsbox::die("Copying out %s <- %s failed: BIND_COPY_OUT is compatible only with regular files",
+                   outside.c_str(), rule.first.c_str());
+       }
 
-        make_file(outside, 0755, 0644);
-        copy_file(inside, outside, 0644);
-    }
+       make_file(outside, 0755, 0644);
+       copy_file(inside, outside, 0644);
+   }
 }
 
 int libsbox::execution_target::proxy() {
@@ -276,7 +277,7 @@ int libsbox::execution_target::proxy() {
         libsbox::die("Cannot write exit status to status pipe");
     }
 
-    this->copy_out();
+    this->destroy_root();
 
     return 0;
 }
@@ -297,7 +298,7 @@ void libsbox::execution_target::start_proxy() {
     this->proxy_pid = clone(
             clone_callback,
             clone_stack + clone_stack_size,
-            SIGCHLD | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID,
+            SIGCHLD | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWPID,
             this
     );
     delete[] clone_stack;

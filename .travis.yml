@@ -1,0 +1,21 @@
+dist: xenial
+sudo: required
+
+language: cpp
+
+os:
+    - linux
+
+compiler:
+    - gcc
+    - clang
+
+script:
+    - mkdir build
+    - cd build
+    - cmake ..
+    - cmake --build .
+
+    # Running tests
+    - sudo swapoff -a
+    - sudo ctest --output-on-failure

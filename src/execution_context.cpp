@@ -91,8 +91,6 @@ long libsbox::execution_context::get_wall_clock() {
     return seg.tv_sec * 1000 + seg.tv_usec / 1000;
 }
 
-#include <iostream>
-
 void libsbox::execution_context::run() {
     current_context = this;
 

@@ -74,7 +74,7 @@ private:
     int proxy();
     void start_proxy();
     void prepare_root();
-    void copy_out();
+    void destroy_root();
 
     [[noreturn]]
     void slave();

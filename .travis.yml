@@ -14,8 +14,8 @@ script:
     - mkdir build
     - cd build
     - cmake ..
-    - cmake --build .
+    - make
 
     # Running tests
     - sudo swapoff -a
-    - sudo ctest --output-on-failure
+    - sudo CTEST_OUTPUT_ON_FAILURE=true make test

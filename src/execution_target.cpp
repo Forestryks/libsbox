@@ -2,10 +2,10 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
+#include <libsbox/die.h>
 #include <libsbox/execution_target.h>
 #include <libsbox/execution_context.h>
 #include <libsbox/init.h>
-#include <libsbox/die.h>
 #include <libsbox/conf.h>
 #include <libsbox/fs.h>
 #include <libsbox/signal.h>

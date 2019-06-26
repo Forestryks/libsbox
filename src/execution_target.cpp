@@ -412,7 +412,7 @@ void libsbox::execution_target::setup_rlimits() {
     }
 
     set_rlimit(RLIMIT_STACK, RLIM_INFINITY);
-    set_rlimit(RLIMIT_NOFILE, (this->max_file == -1 ? RLIM_INFINITY : this->max_files));
+    set_rlimit(RLIMIT_NOFILE, (this->max_files == -1 ? RLIM_INFINITY : this->max_files));
     set_rlimit(RLIMIT_NPROC, (this->max_threads == -1 ? RLIM_INFINITY : this->max_threads));
     set_rlimit(RLIMIT_MEMLOCK, 0);
 }

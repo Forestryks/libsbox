@@ -24,8 +24,8 @@ public:
     long time_limit = -1;
     long memory_limit = -1;
     long fsize_limit = -1;
-    unsigned max_files = 64;
-    unsigned max_threads = 1;
+    int max_files = 64;
+    int max_threads = 1;
 
     in_stream stdin;
     out_stream stdout, stderr;

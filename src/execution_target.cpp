@@ -420,14 +420,14 @@ void libsbox::execution_target::setup_rlimits() {
 #undef set_rlimit
 
 void libsbox::execution_target::setup_credentials() {
-    if (setresgid(libsbox_gid, libsbox_gid, libsbox_gid) != 0) {
-        libsbox::die("Setting process gid to %d failed (%s)", libsbox_gid, strerror(errno));
+    if (setresgid(this->uid, this->uid, this->uid) != 0) {
+        libsbox::die("Setting process gid to %d failed (%s)", this->uid, strerror(errno));
     }
     if (setgroups(0, nullptr) != 0) {
         libsbox::die("Removing process from all groups failed (%s)", strerror(errno));
     }
-    if (setresuid(libsbox_uid, libsbox_uid, libsbox_uid) != 0) {
-        libsbox::die("Setting process uid to %d failed (%s)", libsbox_uid, strerror(errno));
+    if (setresuid(this->uid, this->uid, this->uid) != 0) {
+        libsbox::die("Setting process uid to %d failed (%s)", this->uid, strerror(errno));
     }
     if (setpgrp() != 0) {
         libsbox::die("Setting process group id failed (%s)", strerror(errno));

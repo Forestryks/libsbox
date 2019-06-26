@@ -56,6 +56,8 @@ private:
 
     cgroup_controller *cpuacct_controller = nullptr, *memory_controller = nullptr;
 
+    uid_t uid;
+
     pid_t proxy_pid = 0;
     pid_t slave_pid = 0;
     int status_pipe[2] = {-1, -1};
@@ -82,7 +84,7 @@ private:
     void dup2_fds();
     void close_all_fds();
     void setup_rlimits();
-    static void setup_credentials();
+    void setup_credentials();
 
     long get_time_usage();
     long get_time_usage_sys();

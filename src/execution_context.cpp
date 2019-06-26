@@ -94,6 +94,14 @@ long libsbox::execution_context::get_wall_clock() {
 void libsbox::execution_context::run() {
     current_context = this;
 
+    if (this->targets.size() > max_targets) {
+        libsbox::die("Targets count exceeds limit of %d targets", max_targets);
+    }
+
+    for (int i = 0; i < (int)this->targets.size(); ++i) {
+        this->targets[i]->uid = this->first_uid + i;
+    }
+
     for (auto target : this->targets) {
         target->prepare();
     }

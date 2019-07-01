@@ -5,6 +5,7 @@
 #include <libsbox/die.h>
 #include <libsbox/execution_context.h>
 #include <libsbox/conf.h>
+#include <libsbox/logger.h>
 
 #include <cstdio>
 #include <cstring>
@@ -26,6 +27,7 @@ void libsbox::die(const char *msg, ...) {
         // We are in invoker process
         fatal_handler(err_buf);
 
+        error(err_buf);
         if (current_context != nullptr) current_context->die();
     } else {
         char err_buf2[err_buf_size + 9];

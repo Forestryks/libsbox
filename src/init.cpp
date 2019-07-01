@@ -5,6 +5,7 @@
 #include <libsbox/init.h>
 #include <libsbox/die.h>
 #include <libsbox/signal.h>
+#include <libsbox/logger.h>
 
 #include <errno.h>
 #include <cstring>

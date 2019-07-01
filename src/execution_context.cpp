@@ -14,6 +14,13 @@
 #include <signal.h>
 #include <wait.h>
 #include <sys/time.h>
+#include <libsbox/logger.h>
+
+int libsbox::execution_context::counter = 0;
+
+libsbox::execution_context::execution_context() {
+    this->global_id = counter++;
+}
 
 void libsbox::execution_context::register_target(libsbox::execution_target *target) {
     this->targets.push_back(target);
@@ -98,9 +105,11 @@ void libsbox::execution_context::run() {
         libsbox::die("Targets count exceeds limit of %d targets", max_targets);
     }
 
-    for (int i = 0; i < (int)this->targets.size(); ++i) {
+    for (int i = 0; i < (int) this->targets.size(); ++i) {
         this->targets[i]->uid = this->first_uid + i;
     }
+
+    info("Starting " + CONTEXT(this) + ": " + this->json_params());
 
     for (auto target : this->targets) {
         target->prepare();
@@ -121,7 +130,7 @@ void libsbox::execution_context::run() {
 
     int exited_cnt = 0;
     char err_buf[err_buf_size];
-    while (exited_cnt < (int)this->targets.size()) {
+    while (exited_cnt < (int) this->targets.size()) {
         int stat;
         pid_t pid = wait(&stat);
         if (pid < 0) {
@@ -215,6 +224,8 @@ void libsbox::execution_context::run() {
         target->cleanup();
     }
 
+    info("Execution of " + CONTEXT(this) + " completed: " + this->json_results());
+
     current_context = nullptr;
 }
 
@@ -222,6 +233,51 @@ void libsbox::execution_context::die() {
     for (auto target : this->targets) {
         target->die();
     }
+}
+
+std::string libsbox::execution_context::json_params() {
+    std::string res = "{";
+    res += "'wall_time_limit': " + std::to_string(this->wall_time_limit) + ", ";
+    res += "'first_uid': " + std::to_string(this->first_uid) + ", ";
+
+    res += "'targets': [";
+    for (int i = 0; i < (int) this->targets.size(); ++i) {
+        if (i != 0) {
+            res += ", ";
+        }
+        res += "{'name': '" + TARGET(this->targets[i]) + "', 'data': " + this->targets[i]->json_params() + "}";
+    }
+    res += "], ";
+
+    res += "'pipes': [";
+    for (int i = 0; i < (int) this->pipes.size(); ++i) {
+        if (i != 0) {
+            res += ", ";
+        }
+        res += "{";
+        res += "'write-end': '" + this->pipes[i].write_end->name + "', ";
+        res += "'read-end': '" + this->pipes[i].read_end->name + "', ";
+        res += "'flags': '" + std::to_string(this->pipes[i].extra_flags) + "'";
+        res += "}";
+    }
+    res += "]";
+    res += "}";
+
+    return res;
+}
+
+std::string libsbox::execution_context::json_results() {
+    std::string res = "{";
+    res += "'targets': [";
+    for (int i = 0; i < (int) this->targets.size(); ++i) {
+        if (i != 0) {
+            res += ", ";
+        }
+        res += "{'name': '" + TARGET(this->targets[i]) + "', 'data': " + this->targets[i]->json_results(true) + "}";
+    }
+    res += "]";
+    res += "}";
+    return res;
 }
 
 namespace libsbox {

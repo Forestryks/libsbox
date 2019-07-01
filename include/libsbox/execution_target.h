@@ -5,6 +5,9 @@
 #ifndef LIBSBOX_EXECUTION_TARGET_H
 #define LIBSBOX_EXECUTION_TARGET_H
 
+#define TIDOF(target) std::to_string(target->global_id)
+#define TARGET(target) ("<target id=" + TIDOF(target) + ">")
+
 #include <libsbox/io.h>
 #include <libsbox/bind.h>
 #include <libsbox/cgroup.h>
@@ -47,16 +50,24 @@ public:
     int term_signal = -1;
     bool oom_killed = false;
 
+    std::string json_params();
+    std::string json_results(bool readable = false);
+    std::string plain_results();
+    std::string min_results();
+
     execution_target(int, char **);
     explicit execution_target(const std::vector<std::string> &);
     ~execution_target();
 private:
+    static int counter;
+    int global_id = 0;
+
     char **argv = nullptr;
     char **env = nullptr;
 
     cgroup_controller *cpuacct_controller = nullptr, *memory_controller = nullptr;
 
-    uid_t uid;
+    uid_t uid = 0;
 
     pid_t proxy_pid = 0;
     pid_t slave_pid = 0;

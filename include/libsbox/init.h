@@ -8,7 +8,7 @@
 namespace libsbox {
     extern bool initialized;
 
-    void init(void (*fatal_error_handler)(const char *));
+    void init();
 
     void init_credentials();
 } // namespace libsbox

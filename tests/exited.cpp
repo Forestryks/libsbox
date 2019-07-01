@@ -16,9 +16,7 @@ int target_main(int argc, char *argv[]) {
 }
 
 int invoke_main(int argc, char *argv[]) {
-    libsbox::init([](const char *msg){
-        std::cout << "Error: " << msg << std::endl;
-    });
+    libsbox::init();
 
     assert(argc >= 3);
 

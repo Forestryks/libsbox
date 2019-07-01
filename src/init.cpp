@@ -15,8 +15,7 @@
 
 bool libsbox::initialized = false;
 
-void libsbox::init(void (*fatal_error_handler)(const char *)) {
-    fatal_handler = fatal_error_handler;
+void libsbox::init() {
     if (initialized) die("Already initialized");
 
     std::set_terminate([](){

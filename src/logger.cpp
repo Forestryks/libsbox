@@ -22,9 +22,9 @@ void put_time_stamp(const char *time_stamp) {
 }
 
 const char *levels[] = {
-    "INFO ",
-    "WARN ",
-    "ERROR"
+    "INFO  ",
+    "WARN  ",
+    "ERROR "
 };
 
 void internal_log(int level, const char *message, const char *file, const char *function, int line) {

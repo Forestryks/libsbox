@@ -131,6 +131,7 @@ void libsbox::execution_target::cleanup() {
 }
 
 void libsbox::execution_target::prepare_root() {
+    umask(0);
     if (mount("none", "/", "none", MS_REC | MS_PRIVATE, nullptr) < 0) {
         libsbox::die("Cannot privatize mounts (%s)", strerror(errno));
     }
@@ -221,6 +222,7 @@ void libsbox::execution_target::prepare_root() {
             }
         }
     }
+    umask(022);
 }
 
 void libsbox::execution_target::destroy_root() {
@@ -448,7 +450,6 @@ void libsbox::execution_target::slave() {
     if (exec_fd < 0) {
         libsbox::die("Cannot open target executable");
     }
-    fchmod(this->exec_fd, 0777);
 
     std::string new_cwd = join_path(this->id, "work");
     if (chdir(new_cwd.c_str()) != 0) {

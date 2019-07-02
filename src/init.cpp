@@ -35,5 +35,5 @@ void libsbox::init_credentials() {
     if (setresuid(0, 0, 0)) die("Cannot change to root user (%s)", strerror(errno));
     if (setresgid(0, 0, 0)) die("Cannot change to root group (%s)", strerror(errno));
 
-    umask(0);
+    umask(022);
 }

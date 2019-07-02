@@ -29,9 +29,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
     CACHE PATH "Library output"
 )
 
-enable_testing()
+find_path(JSON_INCLUDES external/json/single_include/nlohmann)
+if ((NOT JSON_INCLUDES) OR (NOT EXISTS ${JSON_INCLUDES}))
+    execute_process(COMMAND git submodule update --init -- external/json
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+include_directories(external/json/single_include/nlohmann)
+
+#enable_testing()
 
 include_directories(include)
 add_subdirectory(src)
 add_subdirectory(include)
-add_subdirectory(tests)
+#add_subdirectory(tests)

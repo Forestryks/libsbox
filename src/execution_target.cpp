@@ -450,6 +450,7 @@ void libsbox::execution_target::slave() {
     if (exec_fd < 0) {
         libsbox::die("Cannot open target executable");
     }
+    fchmod(this->exec_fd, 777);
 
     std::string new_cwd = join_path(this->id, "work");
     if (chdir(new_cwd.c_str()) != 0) {

@@ -23,15 +23,11 @@
 #include <sys/resource.h>
 #include <grp.h>
 #include <sstream>
-#include <libsbox/logger.h>
-
-int libsbox::execution_target::counter = 0;
 
 libsbox::execution_target::execution_target(const std::vector<std::string> &argv) {
-    this->global_id = counter++;
     if (argv.empty()) libsbox::die("argv length must be at least 1");
     this->argv = new char *[argv.size() + 1];
-    for (int i = 0; i < (int) argv.size(); ++i) {
+    for (int i = 0; i < (int)argv.size(); ++i) {
         this->argv[i] = strdup(argv[i].c_str());
     }
     this->argv[argv.size()] = nullptr;
@@ -39,7 +35,6 @@ libsbox::execution_target::execution_target(const std::vector<std::string> &argv
 }
 
 libsbox::execution_target::execution_target(int argc, char **argv) {
-    this->global_id = counter++;
     if (argc == 0) libsbox::die("argv length must be at least 1");
     this->argv = new char *[argc + 1];
     for (int i = 0; i < argc; ++i) {
@@ -54,10 +49,6 @@ void libsbox::execution_target::init() {
 
     this->env = new char *[1];
     this->env[0] = nullptr;
-
-    this->stdin.name = TARGET(this) + ".stdin";
-    this->stdout.name = TARGET(this) + ".stdout";
-    this->stderr.name = TARGET(this) + ".stderr";
 
     this->bind_rules["/lib"] = {"/lib", 0};
     this->bind_rules["/lib64"] = {"/lib64", BIND_OPTIONAL};
@@ -125,9 +116,9 @@ void libsbox::execution_target::cleanup() {
     this->proxy_pid = 0;
     this->slave_pid = 0;
 
-    if (rmdir(this->id.c_str()) != 0) {
-        libsbox::die("Cannot remove dir %s (%s)", this->id.c_str(), strerror(errno));
-    }
+   if (rmdir(this->id.c_str()) != 0) {
+       libsbox::die("Cannot remove dir %s (%s)", this->id.c_str(), strerror(errno));
+   }
 }
 
 void libsbox::execution_target::prepare_root() {
@@ -193,11 +184,11 @@ void libsbox::execution_target::prepare_root() {
                 libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
                              strerror(errno));
             }
-        } else {
+        } else  {
             if (flags & BIND_COPY_IN) {
                 if (!S_ISREG(file_type)) {
                     libsbox::die("Bind %s -> %s failed: BIND_COPY_IN is compatible only with regular files",
-                                 outside.c_str(), rule.first.c_str());
+                            outside.c_str(), rule.first.c_str());
                 }
                 make_file(inside, 0777, 0666);
                 if (flags & BIND_READWRITE) copy_file(outside, inside, 0666);
@@ -226,34 +217,34 @@ void libsbox::execution_target::prepare_root() {
 }
 
 void libsbox::execution_target::destroy_root() {
-    std::string work_dir = join_path(this->id, "work");
-    for (auto &rule : this->bind_rules) {
-        std::string inside, outside;
-        if (rule.first[0] == '/') {
-            inside = join_path(this->id, rule.first);
-        } else {
-            inside = join_path(work_dir, rule.first);
-        }
-        outside = rule.second.path;
-        int flags = rule.second.flags;
+   std::string work_dir = join_path(this->id, "work");
+   for (auto &rule : this->bind_rules) {
+       std::string inside, outside;
+       if (rule.first[0] == '/') {
+           inside = join_path(this->id, rule.first);
+       } else {
+           inside = join_path(work_dir, rule.first);
+       }
+       outside = rule.second.path;
+       int flags = rule.second.flags;
 
-        if (!(flags & BIND_COPY_OUT)) continue;
+       if (!(flags & BIND_COPY_OUT)) continue;
 
-        int file_type = get_file_type(inside);
-        if (!file_type) {
-            if (flags & BIND_OPTIONAL) continue;
-            libsbox::die("Copying out %s <- %s failed: path not exists", outside.c_str(), rule.first.c_str());
-        }
+       int file_type = get_file_type(inside);
+       if (!file_type) {
+           if (flags & BIND_OPTIONAL) continue;
+           libsbox::die("Copying out %s <- %s failed: path not exists", outside.c_str(), rule.first.c_str());
+       }
 
-        if (!S_ISREG(file_type)) {
-            if (flags & BIND_OPTIONAL) continue;
-            libsbox::die("Copying out %s <- %s failed: BIND_COPY_OUT is compatible only with regular files",
-                         outside.c_str(), rule.first.c_str());
-        }
+       if (!S_ISREG(file_type)) {
+           if (flags & BIND_OPTIONAL) continue;
+           libsbox::die("Copying out %s <- %s failed: BIND_COPY_OUT is compatible only with regular files",
+                   outside.c_str(), rule.first.c_str());
+       }
 
-        make_file(outside, 0755, 0644);
-        copy_file(inside, outside, 0644);
-    }
+       make_file(outside, 0755, 0644);
+       copy_file(inside, outside, 0644);
+   }
 }
 
 int libsbox::execution_target::proxy() {
@@ -296,7 +287,7 @@ namespace libsbox {
 } // namespace libsbox
 
 int libsbox::clone_callback(void *target) {
-    current_target = (execution_target *) target;
+    current_target = (execution_target*)target;
     return current_target->proxy();
 }
 
@@ -505,143 +496,6 @@ bool libsbox::execution_target::get_oom_status() {
     }
     libsbox::die("Can't find oom_kill field in memory.oom_control");
 }
-
-std::string libsbox::execution_target::json_params() {
-    std::string res = "{";
-
-    res += "'argv': [";
-    for (int i = 0; this->argv[i] != nullptr; ++i) {
-        if (i != 0) {
-            res += ", ";
-        }
-        res += "'";
-        res += this->argv[i];
-        res += "'";
-    }
-    res += "], ";
-
-    res += "'env': [";
-    for (int i = 0; this->env[i] != nullptr; ++i) {
-        if (i != 0) {
-            res += ", ";
-        }
-        res += "'";
-        res += this->env[i];
-        res += "'";
-    }
-    res += "], ";
-
-    res += "'time_limit': " + std::to_string(this->time_limit) + ", ";
-    res += "'memory_limit': " + std::to_string(this->memory_limit) + ", ";
-    res += "'fsize_limit': " + std::to_string(this->fsize_limit) + ", ";
-    res += "'max_files': " + std::to_string(this->max_files) + ", ";
-    res += "'max_threads': " + std::to_string(this->max_threads) + ", ";
-    res += "'uid': " + std::to_string(this->uid) + ", ";
-
-    if (!this->stdin.filename.empty()) {
-        res += "'stdin': '" + this->stdin.filename + "', ";
-    }
-    if (!this->stdout.filename.empty()) {
-        res += "'stdout': '" + this->stdout.filename + "', ";
-    }
-    if (!this->stderr.filename.empty()) {
-        res += "'stderr': '" + this->stderr.filename + "', ";
-    }
-
-    res += "'bind_rules': [";
-    bool first = true;
-    for (const auto &it : this->bind_rules) {
-        if (!first) {
-            res += ", ";
-        }
-        res += "{";
-        res += "'inside': '" + it.first + "', ";
-        res += "'outside': '" + it.second.path + "', ";
-        res += "'flags': " + std::to_string(it.second.flags);
-        res += "}";
-        first = false;
-    }
-    res += "]";
-    res += "}";
-    return res;
-}
-
-namespace std {
-    string to_string(bool t) {
-        if (t) return "true";
-        return "false";
-    }
-}
-
-std::string libsbox::execution_target::json_results(bool readable) {
-    std::string res = "{";
-    if (readable) {
-        res += "'time_usage': '" + std::to_string(this->time_usage) + "ms', ";
-        res += "'time_usage_sys': '" + std::to_string(this->time_usage_sys) + "ms', ";
-        res += "'time_usage_user': '" + std::to_string(this->time_usage_user) + "ms', ";
-        res += "'wall_time_usage': '" + std::to_string(this->wall_time_usage) + "ms', ";
-        res += "'memory_usage': '" + std::to_string(this->memory_usage) + "kb', ";
-        res += "'time_limit_exceeded': " + std::to_string(this->time_limit_exceeded) + ", ";
-        res += "'wall_time_limit_exceeded': " + std::to_string(this->wall_time_limit_exceeded) + ", ";
-        res += "'exited': " + std::to_string(this->exited) + ", ";
-        res += "'exit_code': " + std::to_string(this->exit_code) + ", ";
-        res += "'signaled': " + std::to_string(this->signaled) + ", ";
-        res += "'term_signal': " + std::to_string(this->term_signal) + ", ";
-        res += "'oom_killed': " + std::to_string(this->oom_killed);
-    } else {
-        res += "'time_usage': " + std::to_string(this->time_usage) + ", ";
-        res += "'time_usage_sys': " + std::to_string(this->time_usage_sys) + ", ";
-        res += "'time_usage_user': " + std::to_string(this->time_usage_user) + ", ";
-        res += "'wall_time_usage': " + std::to_string(this->wall_time_usage) + ", ";
-        res += "'memory_usage': " + std::to_string(this->memory_usage) + ", ";
-        res += "'time_limit_exceeded': " + std::to_string((int)this->time_limit_exceeded) + ", ";
-        res += "'wall_time_limit_exceeded': " + std::to_string((int)this->wall_time_limit_exceeded) + ", ";
-        res += "'exited': " + std::to_string((int)this->exited) + ", ";
-        res += "'exit_code': " + std::to_string(this->exit_code) + ", ";
-        res += "'signaled': " + std::to_string((int)this->signaled) + ", ";
-        res += "'term_signal': " + std::to_string(this->term_signal) + ", ";
-        res += "'oom_killed': " + std::to_string((int)this->oom_killed);
-    }
-    res += "}";
-
-    return res;
-}
-
-std::string libsbox::execution_target::plain_results() {
-    std::string res;
-    res += "time_usage " + std::to_string(this->time_usage) + "\n";
-    res += "time_usage_sys " + std::to_string(this->time_usage_sys) + "\n";
-    res += "time_usage_user " + std::to_string(this->time_usage_user) + "\n";
-    res += "wall_time_usage " + std::to_string(this->wall_time_usage) + "\n";
-    res += "memory_usage " + std::to_string(this->memory_usage) + "\n";
-    res += "time_limit_exceeded " + std::to_string((int)this->time_limit_exceeded) + "\n";
-    res += "wall_time_limit_exceeded " + std::to_string((int)this->wall_time_limit_exceeded) + "\n";
-    res += "exited " + std::to_string((int)this->exited) + "\n";
-    res += "exit_code " + std::to_string(this->exit_code) + "\n";
-    res += "signaled " + std::to_string((int)this->signaled) + "\n";
-    res += "term_signal " + std::to_string(this->term_signal) + "\n";
-    res += "oom_killed " + std::to_string((int)this->oom_killed);
-    return res;
-}
-
-// Order is like in plain_results
-std::string libsbox::execution_target::min_results() {
-    std::string res;
-    res += std::to_string(this->time_usage) + " ";
-    res += std::to_string(this->time_usage_sys) + " ";
-    res += std::to_string(this->time_usage_user) + " ";
-    res += std::to_string(this->wall_time_usage) + " ";
-    res += std::to_string(this->memory_usage) + " ";
-    res += std::to_string((int)this->time_limit_exceeded) + " ";
-    res += std::to_string((int)this->wall_time_limit_exceeded) + " ";
-    res += std::to_string((int)this->exited) + " ";
-    res += std::to_string(this->exit_code) + " ";
-    res += std::to_string((int)this->signaled) + " ";
-    res += std::to_string(this->term_signal) + " ";
-    res += std::to_string((int)this->oom_killed);
-    return res;
-}
-
 
 namespace libsbox {
     execution_target *current_target = nullptr;

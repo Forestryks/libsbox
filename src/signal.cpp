@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <libsbox/conf.h>
-#include <libsbox/logger.h>
 
 namespace libsbox {
     enum sigactions {

@@ -5,12 +5,15 @@
 #include <libsbox/die.h>
 #include <libsbox/execution_context.h>
 #include <libsbox/conf.h>
-#include <libsbox/logger.h>
 
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+
+void standard_fatal_handler(const char *msg) {
+    fprintf(stderr, "%s", msg);
+}
 
 [[noreturn]] __attribute__((format(printf, 1, 2)))
 void libsbox::die(const char *msg, ...) {
@@ -21,7 +24,8 @@ void libsbox::die(const char *msg, ...) {
 
     if (current_target == nullptr) {
         // We are in invoker process
-        error(err_buf);
+        fatal_handler(err_buf);
+
         if (current_context != nullptr) current_context->die();
     } else {
         char err_buf2[err_buf_size + 9];
@@ -39,3 +43,7 @@ void libsbox::die(const char *msg, ...) {
 
     exit(1);
 }
+
+namespace libsbox {
+    void (*fatal_handler)(const char *) = standard_fatal_handler;
+} // namespace libsbox

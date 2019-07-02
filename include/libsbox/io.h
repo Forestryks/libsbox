@@ -15,7 +15,6 @@ namespace libsbox {
     private:
         int fd = -1;
         std::string filename;
-        std::string name;
 
         friend class execution_context;
         friend class execution_target;

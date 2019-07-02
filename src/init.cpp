@@ -5,7 +5,6 @@
 #include <libsbox/init.h>
 #include <libsbox/die.h>
 #include <libsbox/signal.h>
-#include <libsbox/logger.h>
 
 #include <errno.h>
 #include <cstring>
@@ -15,7 +14,8 @@
 
 bool libsbox::initialized = false;
 
-void libsbox::init() {
+void libsbox::init(void (*fatal_error_handler)(const char *)) {
+    fatal_handler = fatal_error_handler;
     if (initialized) die("Already initialized");
 
     std::set_terminate([](){

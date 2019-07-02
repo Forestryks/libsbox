@@ -15,7 +15,9 @@ int target_main(int, char *[]) {
 }
 
 int invoke_main(int argc, char *argv[]) {
-    libsbox::init();
+    libsbox::init([](const char *msg){
+        std::cout << "Error: " << msg << std::endl;
+    });
 
     assert(argc >= 2);
 
@@ -31,7 +33,18 @@ int invoke_main(int argc, char *argv[]) {
     context->register_target(target.get());
     context->run();
 
-    std::cout << target->plain_results() << std::endl;
+    std::cout << "exited: " << target->exited << std::endl;
+    std::cout << "exit_code: " << target->exit_code << std::endl;
+    std::cout << "signaled: " << target->signaled << std::endl;
+    std::cout << "term_signal: " << target->term_signal << std::endl;
+    std::cout << "time_limit_exceeded: " << target->time_limit_exceeded << std::endl;
+    std::cout << "wall_time_limit_exceeded: " << target->wall_time_limit_exceeded << std::endl;
+    std::cout << "oom_killed: " << target->oom_killed << std::endl;
+    std::cout << "time_usage: " << target->time_usage << std::endl;
+    std::cout << "time_usage_sys: " << target->time_usage_sys << std::endl;
+    std::cout << "time_usage_user: " << target->time_usage_user << std::endl;
+    std::cout << "wall_time_usage: " << target->wall_time_usage << std::endl;
+    std::cout << "memory_usage: " << target->memory_usage << std::endl;
 
 //    assert(target->exited);
 //    assert(target->exit_code == -1);

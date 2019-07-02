@@ -8,6 +8,8 @@
 #include <stdarg.h>
 
 namespace libsbox {
+    extern void (*fatal_handler)(const char *);
+
     [[noreturn]] __attribute__((format(printf, 1, 2)))
     void die(const char *, ...);
 } // namespace libsbox

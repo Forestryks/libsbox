@@ -5,9 +5,6 @@
 #ifndef LIBSBOX_EXECUTION_CONTEXT_H
 #define LIBSBOX_EXECUTION_CONTEXT_H
 
-#define CIDOF(context) std::to_string(context->global_id)
-#define CONTEXT(context) ("<context id=" + TIDOF(context) + ">")
-
 #include <libsbox/io.h>
 #include <libsbox/execution_target.h>
 #include <libsbox/cgroup.h>
@@ -22,22 +19,14 @@ namespace libsbox {
 
 class libsbox::execution_context {
 public:
-    execution_context();
-
     long wall_time_limit = -1;
     uid_t first_uid = 35617; // [first_uid, first_uid+10)
 
     void register_target(execution_target *);
     void link(out_stream *, in_stream *, int pipe_flags = 0);
     void run();
-
-    std::string json_params();
-    std::string json_results();
 private:
-    static int counter;
-    int global_id = 0;
-
-    int error_pipe[2] = {-1, -1};
+    int error_pipe[2];
     std::vector<execution_target *> targets;
     std::vector<io_pipe> pipes;
     struct timeval run_start = {};

@@ -205,6 +205,7 @@ void libsbox::execution_context::run() {
         if (this->wall_time_limit != -1) {
             exited_target->wall_time_limit_exceeded = (exited_target->wall_time_usage > this->wall_time_limit);
         }
+        this->wall_time_usage = std::max(this->wall_time_usage, exited_target->wall_time_usage);
     }
 
     stop_timer();

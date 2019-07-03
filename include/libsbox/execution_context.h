@@ -22,12 +22,15 @@ public:
     long wall_time_limit = -1;
     uid_t first_uid = 35617; // [first_uid, first_uid+10)
 
+    long wall_time_usage = -1;
+
+    std::vector<execution_target *> targets;
+
     void register_target(execution_target *);
     void link(out_stream *, in_stream *, int pipe_flags = 0);
     void run();
 private:
     int error_pipe[2];
-    std::vector<execution_target *> targets;
     std::vector<io_pipe> pipes;
     struct timeval run_start = {};
 

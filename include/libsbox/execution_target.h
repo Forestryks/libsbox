@@ -30,8 +30,6 @@ public:
     in_stream stdin;
     out_stream stdout, stderr;
 
-    std::map<std::string, bind_rule> bind_rules;
-
     // stats
     long time_usage = 0;
     long time_usage_sys = 0;
@@ -47,6 +45,9 @@ public:
     int term_signal = -1;
     bool oom_killed = false;
 
+    void add_standard_rules();
+    void add_bind_rule(const std::string &, const std::string &, int);
+
     execution_target(int, char **);
     explicit execution_target(const std::vector<std::string> &);
     ~execution_target();
@@ -54,9 +55,11 @@ private:
     char **argv = nullptr;
     char **env = nullptr;
 
+    std::vector<bind_rule> bind_rules;
+
     cgroup_controller *cpuacct_controller = nullptr, *memory_controller = nullptr;
 
-    uid_t uid;
+    uid_t uid = 0;
 
     pid_t proxy_pid = 0;
     pid_t slave_pid = 0;

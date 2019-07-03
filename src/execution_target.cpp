@@ -49,11 +49,6 @@ void libsbox::execution_target::init() {
 
     this->env = new char *[1];
     this->env[0] = nullptr;
-
-    this->bind_rules["/lib"] = {"/lib", 0};
-    this->bind_rules["/lib64"] = {"/lib64", BIND_OPTIONAL};
-    this->bind_rules["/usr/lib"] = {"/usr/lib", 0};
-    this->bind_rules["/usr/lib64"] = {"/usr/lib64", BIND_OPTIONAL};
 }
 
 libsbox::execution_target::~execution_target() {
@@ -77,6 +72,17 @@ void libsbox::execution_target::die() {
 
     kill(-this->proxy_pid, SIGKILL);
     kill(this->proxy_pid, SIGKILL);
+}
+
+void libsbox::execution_target::add_bind_rule(const std::string &inside, const std::string &outside, int flags) {
+    this->bind_rules.push_back({inside, outside, flags});
+}
+
+void libsbox::execution_target::add_standard_rules() {
+    this->add_bind_rule("/lib", "/lib", 0);
+    this->add_bind_rule("/lib64", "/lib64", BIND_OPTIONAL);
+    this->add_bind_rule("/usr/lib", "/usr/lib", 0);
+    this->add_bind_rule("/usr/lib64", "/usr/lib64", BIND_OPTIONAL);
 }
 
 void libsbox::execution_target::prepare() {
@@ -122,7 +128,7 @@ void libsbox::execution_target::cleanup() {
 }
 
 void libsbox::execution_target::prepare_root() {
-    umask(0);
+    int old_umask = umask(0);
     if (mount("none", "/", "none", MS_REC | MS_PRIVATE, nullptr) < 0) {
         libsbox::die("Cannot privatize mounts (%s)", strerror(errno));
     }
@@ -145,28 +151,27 @@ void libsbox::execution_target::prepare_root() {
     make_path(work_dir, 0777);
 
     for (const auto &rule : this->bind_rules) {
-        std::string inside, outside;
-        if (rule.first[0] == '/') {
-            inside = join_path(this->id, rule.first);
+        std::string inside = rule.inside, outside = rule.outside;
+        int flags = rule.flags;
+        if (inside[0] == '/') {
+            inside = join_path(this->id, inside);
         } else {
-            inside = join_path(work_dir, rule.first);
+            inside = join_path(work_dir, inside);
         }
-        outside = rule.second.path;
-        int flags = rule.second.flags;
 
         if ((flags & BIND_COPY_OUT) && !(flags & BIND_COPY_IN)) continue;
 
         int file_type = get_file_type(outside);
         if (!file_type) {
             if (flags & BIND_OPTIONAL) continue;
-            libsbox::die("Bind %s -> %s failed: path not exists", outside.c_str(), rule.first.c_str());
+            libsbox::die("Bind %s -> %s failed: path not exists", outside.c_str(), rule.inside.c_str());
         }
 
         if (S_ISDIR(file_type)) {
             // working with dir
             if (flags & BIND_COPY_IN) {
                 libsbox::die("Bind %s -> %s failed: BIND_COPY_IN is not compatible with directories", outside.c_str(),
-                             rule.first.c_str());
+                             rule.inside.c_str());
             }
 
             make_path(inside, 0777);
@@ -177,18 +182,18 @@ void libsbox::execution_target::prepare_root() {
             }
 
             if (mount(outside.c_str(), inside.c_str(), "none", mount_flags, "") < 0) {
-                libsbox::die("Bind %s -> %s failed: mount failed (%s)", outside.c_str(), rule.first.c_str(),
+                libsbox::die("Bind %s -> %s failed: mount failed (%s)", outside.c_str(), rule.inside.c_str(),
                              strerror(errno));
             }
             if (mount(outside.c_str(), inside.c_str(), "none", mount_flags | MS_REMOUNT, "") < 0) {
-                libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
+                libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.inside.c_str(),
                              strerror(errno));
             }
         } else  {
             if (flags & BIND_COPY_IN) {
                 if (!S_ISREG(file_type)) {
                     libsbox::die("Bind %s -> %s failed: BIND_COPY_IN is compatible only with regular files",
-                            outside.c_str(), rule.first.c_str());
+                            outside.c_str(), rule.inside.c_str());
                 }
                 make_file(inside, 0777, 0666);
                 if (flags & BIND_READWRITE) copy_file(outside, inside, 0666);
@@ -204,42 +209,41 @@ void libsbox::execution_target::prepare_root() {
             }
 
             if (mount(outside.c_str(), inside.c_str(), "none", mount_flags, "") < 0) {
-                libsbox::die("Bind %s -> %s failed: mount failed (%s)", outside.c_str(), rule.first.c_str(),
+                libsbox::die("Bind %s -> %s failed: mount failed (%s)", outside.c_str(), rule.inside.c_str(),
                              strerror(errno));
             }
             if (mount(outside.c_str(), inside.c_str(), "none", mount_flags | MS_REMOUNT, "") < 0) {
-                libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.first.c_str(),
+                libsbox::die("Bind %s -> %s failed: remount failed (%s)", outside.c_str(), rule.inside.c_str(),
                              strerror(errno));
             }
         }
     }
-    umask(022);
+    umask(old_umask);
 }
 
 void libsbox::execution_target::destroy_root() {
    std::string work_dir = join_path(this->id, "work");
    for (auto &rule : this->bind_rules) {
-       std::string inside, outside;
-       if (rule.first[0] == '/') {
-           inside = join_path(this->id, rule.first);
+       std::string inside = rule.inside, outside = rule.outside;
+       int flags = rule.flags;
+       if (inside[0] == '/') {
+           inside = join_path(this->id, inside);
        } else {
-           inside = join_path(work_dir, rule.first);
+           inside = join_path(work_dir, inside);
        }
-       outside = rule.second.path;
-       int flags = rule.second.flags;
 
        if (!(flags & BIND_COPY_OUT)) continue;
 
        int file_type = get_file_type(inside);
        if (!file_type) {
            if (flags & BIND_OPTIONAL) continue;
-           libsbox::die("Copying out %s <- %s failed: path not exists", outside.c_str(), rule.first.c_str());
+           libsbox::die("Copying out %s <- %s failed: path not exists", outside.c_str(), rule.inside.c_str());
        }
 
        if (!S_ISREG(file_type)) {
            if (flags & BIND_OPTIONAL) continue;
            libsbox::die("Copying out %s <- %s failed: BIND_COPY_OUT is compatible only with regular files",
-                   outside.c_str(), rule.first.c_str());
+                   outside.c_str(), rule.inside.c_str());
        }
 
        make_file(outside, 0755, 0644);

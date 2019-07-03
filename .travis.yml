@@ -18,4 +18,4 @@ script:
 
     # Running tests
     - sudo swapoff -a
-    - sudo CTEST_OUTPUT_ON_FAILURE=true make test
+#    - sudo CTEST_OUTPUT_ON_FAILURE=true make test

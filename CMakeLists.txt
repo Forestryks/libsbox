@@ -36,9 +36,9 @@ if ((NOT JSON_INCLUDES) OR (NOT EXISTS ${JSON_INCLUDES}))
 endif()
 include_directories(external/json/single_include/nlohmann)
 
-#enable_testing()
+enable_testing()
 
 include_directories(include)
 add_subdirectory(src)
 add_subdirectory(include)
-#add_subdirectory(tests)
+add_subdirectory(tests)

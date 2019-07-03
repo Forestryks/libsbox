@@ -29,6 +29,8 @@ int invoke_main(int argc, char *argv[]) {
     std::unique_ptr<libsbox::execution_target> target(new libsbox::execution_target(arg));
     std::unique_ptr<libsbox::execution_context> context(new libsbox::execution_context());
 
+    target->add_standard_rules();
+
     context->wall_time_limit = 200;
 
     context->register_target(target.get());

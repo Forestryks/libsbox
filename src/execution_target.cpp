@@ -443,7 +443,7 @@ void libsbox::execution_target::slave() {
     this->inside_box = true;
     this->exec_fd = open(this->argv[0], O_RDONLY | O_CLOEXEC);
     if (exec_fd < 0) {
-        libsbox::die("Cannot open target executable");
+        libsbox::die("Cannot open target executable (%s)", strerror(errno));
     }
 
     std::string new_cwd = join_path(this->id, "work");

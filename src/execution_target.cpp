@@ -326,14 +326,14 @@ void libsbox::execution_target::freopen_fds() {
     }
 
     if (!this->stdout.filename.empty()) {
-        this->stdout.fd = open(this->stdout.filename.c_str(), O_WRONLY | O_CREAT);
+        this->stdout.fd = open(this->stdout.filename.c_str(), O_WRONLY | O_TRUNC);
         if (this->stdout.fd < 0) {
             libsbox::die("Cannot open %s (%s)", this->stdout.filename.c_str(), strerror(errno));
         }
     }
 
     if (!this->stderr.filename.empty()) {
-        this->stderr.fd = open(this->stderr.filename.c_str(), O_WRONLY | O_CREAT);
+        this->stderr.fd = open(this->stderr.filename.c_str(), O_WRONLY | O_TRUNC);
         if (this->stderr.fd < 0) {
             libsbox::die("Cannot open %s (%s)", this->stderr.filename.c_str(), strerror(errno));
         }
@@ -437,6 +437,8 @@ void libsbox::execution_target::setup_credentials() {
         libsbox::die("Setting process group id failed (%s)", strerror(errno));
     }
 }
+
+#include <iostream>
 
 [[noreturn]]
 void libsbox::execution_target::slave() {

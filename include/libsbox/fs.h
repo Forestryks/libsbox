@@ -24,6 +24,7 @@ namespace libsbox {
     void make_file(std::string, int rules = 0755, int file_rules = 0644);
     std::string make_temp_dir(std::string, int rules = 0755);
     void copy_file(const std::string &, const std::string &, int rules = 0644);
+    std::string find_executable(std::string name);
 } // namespace libsbox
 
 #endif //LIBSBOX_FS_H

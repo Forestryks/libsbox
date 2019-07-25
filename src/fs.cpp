@@ -142,3 +142,21 @@ void libsbox::copy_file(const std::string &source, const std::string &dest, int 
         libsbox::die("Copy %s -> %s failed: cannot close destination file (%s)", source.c_str(), dest.c_str(), strerror(errno));
     }
 }
+std::string libsbox::find_executable(std::string name) {
+    if (name[0] == '.') return name;
+    if (name[0] == '/') return name;
+    char *path = strdup(getenv("PATH"));
+    if (path != nullptr) {
+        const char *dir;
+        for (dir = strtok(path, ";"); dir != nullptr; dir = strtok(nullptr, ";")) {
+            std::string result = join_path(dir, name);
+            if (get_file_type(result)) {
+                free(path);
+                return result;
+            }
+        }
+    }
+
+    free(path);
+    libsbox::die("Executable %s not found in PATH or PATH not set", name.c_str());
+}

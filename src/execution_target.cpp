@@ -438,12 +438,10 @@ void libsbox::execution_target::setup_credentials() {
     }
 }
 
-#include <iostream>
-
 [[noreturn]]
 void libsbox::execution_target::slave() {
     this->inside_box = true;
-    this->exec_fd = open(this->argv[0], O_RDONLY | O_CLOEXEC);
+    this->exec_fd = open(find_executable(this->argv[0]).c_str(), O_RDONLY | O_CLOEXEC);
     if (exec_fd < 0) {
         libsbox::die("Cannot open target executable (%s)", strerror(errno));
     }

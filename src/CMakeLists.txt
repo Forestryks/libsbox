@@ -19,6 +19,11 @@ install(
 )
 
 install(
+	CODE
+	"execute_process(COMMAND groupadd invokers)"
+)
+
+install(
     CODE
     "execute_process(COMMAND chown root:invokers ${CMAKE_INSTALL_PREFIX}/bin/invoke)"
 )

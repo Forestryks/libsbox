@@ -44,6 +44,11 @@ Follow the steps bellow to install libsbox on your system
  make install
  ```
 
+5. To allow users use libsbox add them to `invokers` group (insecure)
+ ```bask
+ sudo usermod -aG invokers username
+ ```
+
 ## Running the tests
 
 To run tests type

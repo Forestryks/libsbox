@@ -1,0 +1,4 @@
+{
+  "num_boxes": 1,
+  "socket_path": "/etc/libsboxd/socket"
+}

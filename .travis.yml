@@ -4,18 +4,19 @@ sudo: required
 language: cpp
 
 os:
-    - linux
+  - linux
 
 compiler:
-    - gcc
-    - clang
+  - gcc
+  - clang
 
 script:
-    - mkdir build
-    - cd build
-    - cmake ..
-    - make
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
 
-    # Running tests
-    - sudo swapoff -a
-    - sudo CTEST_OUTPUT_ON_FAILURE=true make test
+  # Running tests
+  # - sudo swapoff -a
+  # - sudo CTEST_OUTPUT_ON_FAILURE=true make test
+

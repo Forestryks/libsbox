@@ -2,7 +2,26 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 project(libsbox)
 
-add_executable(libsboxd libsbox.cpp config.cpp daemon.cpp utils.cpp proxy.cpp signals.cpp context.cpp)
+add_executable(libsboxd
+    libsbox.cpp
+    config.cpp
+    daemon.cpp
+    utils.cpp
+    proxy.cpp
+    signals.cpp
+    context.cpp
+    shared_memory.cpp
+    shared_mutex.cpp
+    shared_cond.cpp
+    shared_counter.cpp
+    shared_barrier.cpp
+    worker.cpp
+    target.cpp
+    bind.cpp
+    cgroup.cpp
+)
+
+target_link_libraries(libsboxd pthread)
 
 #add_library(sbox init.cpp die.cpp execution_target.cpp io.cpp execution_context.cpp fs.cpp signal.cpp cgroup.cpp)
 #

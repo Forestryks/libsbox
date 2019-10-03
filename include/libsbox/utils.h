@@ -8,6 +8,10 @@
 #include <string>
 #include <cstdarg>
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 std::string vformat(const char *fmt, va_list args);
 
 __attribute__((format(printf, 1, 2)))
@@ -29,5 +33,8 @@ private:
 };
 
 StringFormatter operator "" _format(const char *s, std::size_t len);
+
+void write_file(const fs::path &path, const std::string &data);
+std::string read_file(const fs::path &path);
 
 #endif //LIBSBOX_UTILS_H_

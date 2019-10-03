@@ -6,6 +6,7 @@
 #define LIBSBOX_DAEMON_H
 
 #include <libsbox/context.h>
+#include <libsbox/shared_counter.h>
 
 #include <string>
 #include <vector>
@@ -22,6 +23,9 @@ public:
 
     [[nodiscard]]
     int get_server_socket_fd() const;
+
+    [[nodiscard]]
+    SharedCounter *get_uid_counter() const;
 private:
     static Daemon daemon_;
 
@@ -29,6 +33,7 @@ private:
     int server_socket_fd_;
     int num_boxes_;
     std::vector<pid_t> proxy_pids_;
+    SharedCounter *uid_counter_;
 
     void prepare();
     void cleanup();

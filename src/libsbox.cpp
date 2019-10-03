@@ -13,7 +13,13 @@
 /*
  * libsboxd is systemd service, which maintain a set of containers. It can be used through unix-socket by sending JSON
  * request and waiting for response. Unix-socket path may be changed in config.
- * Protocol: TODO
+ * Protocol:
+ * 1. Connect to socket
+ * 2. Write JSON request to socket
+ * 3. Wait for JSON response
+ * 4. Close connection
+ *
+ * Request example in request.json, response example in response.json
  *
  * IMPORTANT: what is said in the next paragraph is not yet implemented TODO
  * There are two types of errors: evaluation errors and internal. While evaluations errors are reported just by
@@ -44,16 +50,27 @@
  * processes.
  * Worker process run in namespaces, so if any error occurs, to cleanup worker need to just exit and namespaces
  * will do the rest.
+ *
+ * Synchronization protocol of proxy and worker process:
+ * proxy:  get request -> open pipes -> fill desc(s) -> [     sub 1     ] -----------------------------> [start barrier(k)] -> close pipes -----> [end barrier(k)]
+ * worker: -------------------------------------------> [desc barrier(1)] -> prepare and spawn target -> [     sub 1      ] -> wait for target -> [     sub 1    ]
+ * First barrier stands for waiting proxy to fill target_desc. After second barrier all targets are spawned, so we can
+ * close pipes in proxy and workers. And after third execution is completed and we call collect results from target_desc.
+ *
  * Target process in spawned by worker and after some preparations executes target executable.
  * TODO: https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
  * TODO: remove syslog
  * TODO: non-critical request error handling
+ * TODO: service stop
  */
 
 void err(const std::string &msg) {
     syslog(LOG_ERR, "%s", msg.c_str());
     exit(1);
 }
+
+#include <libsbox/target_desc.h>
+#include <iostream>
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp(argv[1], "stop") == 0) {

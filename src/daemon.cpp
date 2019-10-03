@@ -58,40 +58,20 @@ void Daemon::run() {
             }
             break;
         } else {
-            int id = std::find(proxy_pids_.begin(), proxy_pids_.end(), pid) - proxy_pids_.begin();
-            if (id == (int) proxy_pids_.size()) {
-                die(format("Unknown process exited (%d)", pid));
-            }
             // We must die here, because proxy shall not exit itself without command from daemon
             if (WIFEXITED(status)) {
-                die(format("Proxy %d exited with exitcode %d", pid + 1, WEXITSTATUS(status)));
+                die(format("Process %d exited with exitcode %d", pid + 1, WEXITSTATUS(status)));
             } else {
-                die(format("Proxy %d was signaled with signal %s", pid + 1, strsignal(WTERMSIG(status))));
+                die(format("Process %d was signaled with signal %s", pid + 1, strsignal(WTERMSIG(status))));
             }
-        }
-    }
-
-    for (int i = 0; i < (int) proxy_pids_.size(); ++i) {
-        if (kill(proxy_pids_[i], SIGTERM) != 0) {
-            die(format("Failed to kill proxy %d: %m", i + 1));
-        }
-    }
-
-    for (int i = 0; i < (int) proxy_pids_.size(); ++i) {
-        int status;
-        pid_t pid = wait(&status);
-        if (pid < 0) {
-            die(format("wait() failed: %m"));
-        } else {
-            auto iter = std::find(proxy_pids_.begin(), proxy_pids_.end(), pid);
-            if (iter == proxy_pids_.end()) {
-                die(format("Unknown process exited (%d)", pid));
-            }
-            proxy_pids_.erase(iter);
         }
     }
 
     cleanup();
+    // TODO: safer termination?
+    if (kill(0, SIGKILL) != 0) {
+        die(format("kill() failed: %m"));
+    }
     exit(0);
 }
 
@@ -120,6 +100,7 @@ void Daemon::prepare() {
 
     // Remove socket file if it exists
     unlink(socket_path_.c_str());
+    errno = 0;
 
     // Create UNIX socket, on which libsboxd will serve
     server_socket_fd_ = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -135,7 +116,7 @@ void Daemon::prepare() {
         die(format("Failed to bind UNIX socket to @%s: %m", socket_path_.c_str()));
     }
 
-    if (listen(server_socket_fd_, 0) != 0) {
+    if (listen(server_socket_fd_, 4) != 0) {
         die(format("Failed to start listening on socket: %m"));
     }
 
@@ -143,6 +124,9 @@ void Daemon::prepare() {
     if (setpgrp() != 0) {
         die(format("Failed to move process to new process group: %m"));
     }
+
+    // All containers must have distinct user ids, so we will use this shared counter to obtain ids in
+    uid_counter_ = new SharedCounter(Config::get().get_first_uid());
 }
 
 void Daemon::cleanup() {
@@ -155,6 +139,7 @@ void Daemon::die(const std::string &error) {
     syslog(LOG_ERR, "%s", ("[daemon] " + error).c_str());
     unlink(socket_path_.c_str());
     close(server_socket_fd_);
+    unlink("/run/libsboxd.pid");
     // Kill every process in group, to ensure that no process continue running uncontrolled
     kill(0, SIGKILL);
     exit(1);
@@ -163,4 +148,8 @@ void Daemon::die(const std::string &error) {
 [[nodiscard]]
 int Daemon::get_server_socket_fd() const {
     return server_socket_fd_;
+}
+
+SharedCounter *Daemon::get_uid_counter() const {
+    return uid_counter_;
 }

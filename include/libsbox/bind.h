@@ -5,7 +5,7 @@
 #ifndef LIBSBOX_BIND_H_
 #define LIBSBOX_BIND_H_
 
-#include <libsbox/target_desc.h>
+#include <libsbox/task_data.h>
 
 #include <string>
 #include <vector>
@@ -24,7 +24,7 @@ public:
     };
 
     Bind(fs::path inside, fs::path outside, int flags);
-    explicit Bind(const bind_desc *desc);
+    explicit Bind(const BindData *bind_data);
 
     void mount(const fs::path &root_dir, const fs::path &work_dir);
     void umount(const fs::path &root_dir, const fs::path &work_dir);

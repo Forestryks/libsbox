@@ -4,42 +4,33 @@
 
 #include <libsbox/shared_counter.h>
 
-SharedCounter::SharedCounter(int val) {
-    shared_memory_ = new SharedMemory(sizeof(int));
-    val_ = (int *) shared_memory_->get();
-    (*val_) = val;
-}
+#include <mutex>
 
-SharedCounter::~SharedCounter() {
-    delete shared_memory_;
+SharedCounter::SharedCounter(int val) {
+    val_.set(val);
 }
 
 void SharedCounter::inc() {
-    mutex_.lock();
-    (*val_)++;
-    mutex_.unlock();
+    std::unique_lock<SharedMutex> lock(mutex_);
+    val_.get()++;
 }
 
 int SharedCounter::get() {
-    mutex_.lock();
-    int ret = (*val_);
-    mutex_.unlock();
-    return ret;
+    std::unique_lock<SharedMutex> lock(mutex_);
+    return val_.get();
 }
 
 int SharedCounter::get_and_inc() {
-    mutex_.lock();
-    int ret = (*val_)++;
-    mutex_.unlock();
-    return ret;
+    std::unique_lock<SharedMutex> lock(mutex_);
+    return val_.get()++;
 }
 
-void SharedCounter::destroy() {
-    mutex_.destroy();
+int SharedCounter::inc_and_get() {
+    std::unique_lock<SharedMutex> lock(mutex_);
+    return ++val_.get();
 }
 
 void SharedCounter::set(int val) {
-    mutex_.lock();
-    (*val_) = val;
-    mutex_.unlock();
+    std::unique_lock<SharedMutex> lock(mutex_);
+    val_.get() = val;
 }

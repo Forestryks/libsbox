@@ -6,9 +6,6 @@
 #define LIBSBOX_SHARED_MUTEX_H_
 
 #include <libsbox/shared_memory.h>
-class SharedMutex;
-#include <libsbox/shared_cond.h>
-
 #include <unistd.h>
 
 class SharedMutex {
@@ -17,12 +14,10 @@ public:
     ~SharedMutex();
     void lock();
     void unlock();
-    void destroy();
+    pthread_mutex_t *get_mutex();
 private:
-    SharedMemory *shared_memory_;
-    pthread_mutex_t *mutex_;
-
-    friend class SharedCond;
+    SharedMemory<pthread_mutex_t> mutex_;
+    pid_t owner_pid_;
 };
 
 #endif //LIBSBOX_SHARED_MUTEX_H_

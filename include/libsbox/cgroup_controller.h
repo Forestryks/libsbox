@@ -2,8 +2,8 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#ifndef LIBSBOX_CGROUP_H_
-#define LIBSBOX_CGROUP_H_
+#ifndef LIBSBOX_CGROUP_CONTROLLER_H_
+#define LIBSBOX_CGROUP_CONTROLLER_H_
 
 #include <string>
 #include <filesystem>
@@ -23,4 +23,4 @@ private:
     fs::path path_;
 };
 
-#endif //LIBSBOX_CGROUP_H_
+#endif //LIBSBOX_CGROUP_CONTROLLER_H_

@@ -28,36 +28,36 @@
  *
  * libsboxd uses following processes tree:
  * daemon
- * ├── proxy
- * │   ├── worker
- * │   │   └── target
- * |   ├── worker
- * │   │   └── target
+ * ├── worker
+ * │   ├── container
+ * │   │   └── task
+ * |   ├── container
+ * │   │   └── task
  * │   ...
- * ├── proxy
- * │   ├── worker
- * │   │   └── target
- * |   ├── worker
- * │   │   └── target
+ * ├── worker
+ * │   ├── container
+ * │   │   └── task
+ * |   ├── container
+ * │   │   └── task
  * │   ...
  * ...
  *
- * Daemon process is systemd service, which creates unix-socket and spawn fixed amount of proxy processes (number may be
+ * Daemon process is systemd service, which creates unix-socket and spawn fixed amount of worker processes (number may be
  * changed in config).
- * Proxy process accepts connections on unix-socket, receives query and after processing sends response and closes
- * connection. It creates pipes and prepares workers' structures, which lie in memory, shared between proxy and workers.
- * Proxy and worker processes share file descriptor table, so pipes, created in proxy process are also visible in worker
+ * Worker process accepts connections on unix-socket, receives query and after processing sends response and closes
+ * connection. It creates pipes and prepares containers' structures, which lie in memory, shared between worker and containers.
+ * Worker and container processes share file descriptor table, so pipes, created in worker process are also visible in container
  * processes.
- * Worker process run in namespaces, so if any error occurs, to cleanup worker need to just exit and namespaces
+ * Container process run in namespaces, so if any error occurs, to cleanup container need to just exit and namespaces
  * will do the rest.
  *
- * Synchronization protocol of proxy and worker process:
- * proxy:  get request -> open pipes -> fill desc(s) -> [     sub 1     ] -----------------------------> [start barrier(k)] -> close pipes -----> [end barrier(k)]
- * worker: -------------------------------------------> [desc barrier(1)] -> prepare and spawn target -> [     sub 1      ] -> wait for target -> [     sub 1    ]
- * First barrier stands for waiting proxy to fill target_desc. After second barrier all targets are spawned, so we can
- * close pipes in proxy and workers. And after third execution is completed and we call collect results from target_desc.
+ * Synchronization protocol of worker and container process:
+ * worker:    get request -> open pipes -> fill desc(s) -> [     sub 1     ] ----------------------------> [start barrier(k)] -> close pipes ---------------> [end barrier(k)]
+ * container: -------------------------------------------> [desc barrier(1)] -> prepare and start tasks -> [     sub 1      ] -> wait for task to complete -> [     sub 1    ]
+ * First barrier stands for waiting worker to fill task_data. After second barrier all task are started, so we can
+ * close pipes in worker and containers. And after third execution is completed and we call collect results from task_data.
  *
- * Target process in spawned by worker and after some preparations executes target executable.
+ * Task process in spawned by container and after some preparations executes task target executable.
  * TODO: https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
  * TODO: remove syslog
  * TODO: non-critical request error handling
@@ -69,7 +69,6 @@ void err(const std::string &msg) {
     exit(1);
 }
 
-#include <libsbox/target_desc.h>
 #include <iostream>
 
 int main(int argc, char *argv[]) {

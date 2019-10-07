@@ -3,24 +3,19 @@
  */
 
 #include <libsbox/daemon.h>
-#include <libsbox/config.h>
 #include <libsbox/utils.h>
-#include <libsbox/proxy.h>
-#include <libsbox/context.h>
 #include <libsbox/signals.h>
+#include <libsbox/config.h>
+#include <libsbox/worker.h>
 
-#include <cstdlib>
-#include <syslog.h>
 #include <unistd.h>
 #include <filesystem>
-#include <iostream>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <csignal>
+#include <syslog.h>
+#include <signal.h>
 #include <wait.h>
-#include <sys/stat.h>
-#include <algorithm>
-#include <fcntl.h>
 
 namespace fs = std::filesystem;
 
@@ -31,34 +26,47 @@ Daemon &Daemon::get() {
 }
 
 [[noreturn]]
+void Daemon::die(const std::string &error) {
+    syslog(LOG_ERR, "%s", ("[daemon] " + error).c_str());
+    unlink(socket_path_.c_str());
+    close(server_socket_fd_);
+    unlink("/run/libsboxd.pid");
+    // Kill every process in group, to ensure that no process continue running uncontrolled
+    kill(0, SIGKILL);
+    exit(1);
+}
+
+void Daemon::terminate() {
+    terminated_ = true;
+}
+
+[[noreturn]]
 void Daemon::run() {
+    ContextManager::set(this);
     prepare();
 
-    // Spawn proxies
+    // Spawn workers
     num_boxes_ = Config::get().get_num_boxes();
-    proxy_pids_.reserve(num_boxes_);
+    workers_pids_.reserve(num_boxes_);
     for (int i = 0; i < num_boxes_; ++i) {
-        pid_t pid = Proxy::spawn();
+        pid_t pid = Worker::spawn();
         if (pid == 0) {
-            die(format("Failed to spawn proxy number %d: %m", i + 1));
+            die(format("Failed to spawn worker number %d: %m", i + 1));
         }
-        proxy_pids_.push_back(pid);
+        workers_pids_.push_back(pid);
     }
 
     while (true) {
-        // Wait for signal or for any proxy to exit
+        // Wait for signal or for any worker to exit
         int status;
         pid_t pid = wait(&status);
         if (pid < 0) {
-            if (errno != EINTR) {
+            if (!terminated_) {
                 die(format("wait() failed: %m"));
-            }
-            if (interrupt_signal != SIGTERM) {
-                die(format("wait() interrupted with %s", strsignal(interrupt_signal)));
             }
             break;
         } else {
-            // We must die here, because proxy shall not exit itself without command from daemon
+            // We must die here, because worker shall not exit itself without command from daemon
             if (WIFEXITED(status)) {
                 die(format("Process %d exited with exitcode %d", pid + 1, WEXITSTATUS(status)));
             } else {
@@ -67,17 +75,33 @@ void Daemon::run() {
         }
     }
 
-    cleanup();
-    // TODO: safer termination?
+    if (unlink(socket_path_.c_str()) != 0) {
+        die(format("Failed to unlink() socket: %m"));
+    }
+    if (close(server_socket_fd_) != 0) {
+        die(format("Failed to close() socket: %m"));
+    }
+
+    // TODO: better termination
     if (kill(0, SIGKILL) != 0) {
         die(format("kill() failed: %m"));
     }
+
+//    while (true) {
+//        int status;
+//        pid_t pid = wait(&status);
+//        if (pid < 0) {
+//            if (errno == ECHILD) {
+//                break;
+//            }
+//            die(format("wait() failed: %m"));
+//        }
+//    }
+
     exit(0);
 }
 
 void Daemon::prepare() {
-    Context::set_context(this);
-
     // We want libsbox to be run as root
     if (setresuid(0, 0, 0) != 0) {
         die(format("Cannot change to root user: %m"));
@@ -91,14 +115,14 @@ void Daemon::prepare() {
     // Although we don't use exceptions, some parts of stl as well as nlohmann/json do. So if exception occurs and is
     // not catched we want die gracefully
     std::set_terminate([]() {
-        Context::get().die("Uncaught exception");
+        ContextManager::get().die("Uncaught exception");
     });
 
     prepare_signals();
 
     socket_path_ = Config::get().get_socket_path();
 
-    // Remove socket file if it exists
+    // Remove socket if exists
     unlink(socket_path_.c_str());
     errno = 0;
 
@@ -116,7 +140,7 @@ void Daemon::prepare() {
         die(format("Failed to bind UNIX socket to @%s: %m", socket_path_.c_str()));
     }
 
-    if (listen(server_socket_fd_, 4) != 0) {
+    if (listen(server_socket_fd_, 0) != 0) {
         die(format("Failed to start listening on socket: %m"));
     }
 
@@ -129,23 +153,6 @@ void Daemon::prepare() {
     uid_counter_ = new SharedCounter(Config::get().get_first_uid());
 }
 
-void Daemon::cleanup() {
-    unlink(socket_path_.c_str());
-    close(server_socket_fd_);
-}
-
-[[noreturn]]
-void Daemon::die(const std::string &error) {
-    syslog(LOG_ERR, "%s", ("[daemon] " + error).c_str());
-    unlink(socket_path_.c_str());
-    close(server_socket_fd_);
-    unlink("/run/libsboxd.pid");
-    // Kill every process in group, to ensure that no process continue running uncontrolled
-    kill(0, SIGKILL);
-    exit(1);
-}
-
-[[nodiscard]]
 int Daemon::get_server_socket_fd() const {
     return server_socket_fd_;
 }

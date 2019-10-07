@@ -7,6 +7,8 @@
 
 #include <string>
 #include <cstdarg>
+#include <vector>
+#include <cstring>
 
 #include <filesystem>
 

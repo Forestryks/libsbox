@@ -8,7 +8,6 @@
 
 #include <json.hpp>
 #include <fstream>
-#include <iostream>
 
 bool Config::loaded_ = false;
 Config Config::config_;

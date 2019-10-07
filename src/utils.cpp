@@ -3,11 +3,7 @@
  */
 
 #include <libsbox/utils.h>
-
-#include <vector>
-#include <cstring>
-
-#include <libsbox/context.h>
+#include <libsbox/context_manager.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -51,13 +47,13 @@ StringFormatter operator ""_format(const char *s, [[maybe_unused]] std::size_t l
 void write_file(const fs::path &path, const std::string &data) {
     int fd = open(path.c_str(), O_WRONLY);
     if (fd < 0) {
-        Context::get().die(format("Cannot open file '%s' for writing: %m", path.c_str()));
+        ContextManager::get().die(format("Cannot open file '%s' for writing: %m", path.c_str()));
     }
     if (write(fd, data.c_str(), data.size()) != (int)data.size()) {
-        Context::get().die(format("Cannot write to file '%s': %m", path.c_str()));
+        ContextManager::get().die(format("Cannot write to file '%s': %m", path.c_str()));
     }
     if (close(fd) != 0) {
-        Context::get().die(format("Cannot close file '%s': %m", path.c_str()));
+        ContextManager::get().die(format("Cannot close file '%s': %m", path.c_str()));
     }
 }
 
@@ -67,14 +63,14 @@ char read_buf[READ_BUF_SIZE];
 std::string read_file(const fs::path &path) {
     int fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
-        Context::get().die(format("Cannot open file '%s' for reading: %m", path.c_str()));
+        ContextManager::get().die(format("Cannot open file '%s' for reading: %m", path.c_str()));
     }
 
     std::string res;
     while (true) {
         int cnt = read(fd, read_buf, READ_BUF_SIZE - 1);
         if (cnt < 0) {
-            Context::get().die(format("Cannot read from file '%s': %m", path.c_str()));
+            ContextManager::get().die(format("Cannot read from file '%s': %m", path.c_str()));
         }
         if (cnt == 0) break;
         read_buf[cnt] = 0;
@@ -82,7 +78,7 @@ std::string read_file(const fs::path &path) {
     }
 
     if (close(fd) != 0) {
-        Context::get().die(format("Cannot close file '%s': %m", path.c_str()));
+        ContextManager::get().die(format("Cannot close file '%s': %m", path.c_str()));
     }
     return res;
 }

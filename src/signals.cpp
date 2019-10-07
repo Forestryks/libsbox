@@ -3,7 +3,7 @@
  */
 
 #include <libsbox/signals.h>
-#include <libsbox/context.h>
+#include <libsbox/context_manager.h>
 #include <libsbox/utils.h>
 
 #include <sys/signal.h>
@@ -41,12 +41,16 @@ int interrupt_signal;
 
 // SIGALRM and SIGTERM must be handled synchronously
 void sigaction_interrupt_handler(int signum) {
-    interrupt_signal = signum;
+    if (signum == SIGTERM) {
+        ContextManager::get().terminate();
+    } else {
+        interrupt_signal = signum;
+    }
 }
 
 // We want to try dieing gracefully when critical signal is caught
 void sigaction_terminate_handler(int signum) {
-    Context::get().die(format("Received fatal signal %d (%s)", signum, strsignal(signum)));
+    ContextManager::get().die(format("Received fatal signal %d (%s)", signum, strsignal(signum)));
 }
 
 void prepare_signals() {
@@ -64,21 +68,21 @@ void prepare_signals() {
         switch (signal_action.sigaction) {
             case SIGACTION_IGNORE:
                 if (sigaction(signal_action.signum, &sigaction_ignore, nullptr)) {
-                    Context::get().die(format("Cannot set signal action for %s: %m", strsignal(signal_action.signum)));
+                    ContextManager::get().die(format("Cannot set signal action for %s: %m", strsignal(signal_action.signum)));
                 }
                 break;
             case SIGACTION_INTERRUPT:
                 if (sigaction(signal_action.signum, &sigaction_interrupt, nullptr)) {
-                    Context::get().die(format("Cannot set signal action for %s: %m", strsignal(signal_action.signum)));
+                    ContextManager::get().die(format("Cannot set signal action for %s: %m", strsignal(signal_action.signum)));
                 }
                 break;
             case SIGACTION_TERMINATE:
                 if (sigaction(signal_action.signum, &sigaction_terminate, nullptr)) {
-                    Context::get().die(format("Cannot set signal action for %s: %m", strsignal(signal_action.signum)));
+                    ContextManager::get().die(format("Cannot set signal action for %s: %m", strsignal(signal_action.signum)));
                 }
                 break;
             default:
-                Context::get().die("Invalid signal action");
+                ContextManager::get().die("Invalid signal action");
         }
     }
 }
@@ -90,7 +94,7 @@ void reset_signals() {
 
     for (auto &signal_action : signal_actions) {
         if (sigaction(signal_action.signum, &sigaction_default, nullptr)) {
-            Context::get().die(format("Cannot restore default signal action for %s (%m)", strsignal(signal_action.signum)));
+            ContextManager::get().die(format("Cannot restore default signal action for %s (%m)", strsignal(signal_action.signum)));
         }
     }
 }

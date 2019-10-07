@@ -2,9 +2,9 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/cgroup.h>
+#include <libsbox/cgroup_controller.h>
 #include <libsbox/config.h>
-#include <libsbox/context.h>
+#include <libsbox/context_manager.h>
 #include <libsbox/utils.h>
 
 #include <fcntl.h>
@@ -15,7 +15,7 @@ CgroupController::CgroupController(const std::string &name, const std::string &i
     std::error_code error;
     fs::create_directories(path_, error);
     if (error) {
-        Context::get().die(format("Cannot create dir '%s': %s", path_.c_str(), error.message().c_str()));
+        ContextManager::get().die(format("Cannot create dir '%s': %s", path_.c_str(), error.message().c_str()));
     }
 }
 
@@ -23,7 +23,7 @@ CgroupController::~CgroupController() {
     std::error_code error;
     fs::remove(path_, error);
     if (error) {
-        Context::get().die(format("Cannot remove dir '%s': %s", path_.c_str(), error.message().c_str()));
+        ContextManager::get().die(format("Cannot remove dir '%s': %s", path_.c_str(), error.message().c_str()));
     }
 }
 

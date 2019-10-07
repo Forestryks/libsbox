@@ -2,27 +2,25 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#ifndef LIBSBOX_TARGET_DESC_H_
-#define LIBSBOX_TARGET_DESC_H_
+#ifndef LIBSBOX_TASK_DATA_H_
+#define LIBSBOX_TASK_DATA_H_
 
+// We must include linux header first to overwrite constants in libsbox header
 #include <linux/limits.h>
+#include <libsbox/limits.h>
 
-const int ARGC_MAX = 256;
-const int ENVC_MAX = 256;
-const int BINDS_MAX = 256;
-
-struct io_stream {
+struct IOStream {
     int fd = -1;
     char filename[PATH_MAX] = {};
 };
 
-struct bind_desc {
+struct BindData {
     char inside[PATH_MAX] = {};
     char outside[PATH_MAX] = {};
     int flags = 0;
 };
 
-struct target_desc {
+struct TaskData {
     // parameters
     long time_limit_ms = -1;
     long wall_time_limit_ms = -1;
@@ -31,15 +29,15 @@ struct target_desc {
     int max_files = 16;
     int max_threads = 1;
 
-    io_stream stdin_desc, stdout_desc, stderr_desc;
+    IOStream stdin_desc, stdout_desc, stderr_desc;
 
     char *argv[ARGC_MAX] = {};
-    char argv_data[ARG_MAX] = {};
+    char argv_data[ARGV_MAX] = {};
     char *env[ENVC_MAX] = {};
-    char env_data[ARG_MAX] = {};
+    char env_data[ENV_MAX] = {};
 
     int bind_count = -1;
-    bind_desc binds[BINDS_MAX];
+    BindData binds[BINDS_MAX];
 
     // results
     long time_usage_ms = 0;
@@ -59,4 +57,4 @@ struct target_desc {
     bool error = false;
 };
 
-#endif //LIBSBOX_TARGET_DESC_H_
+#endif //LIBSBOX_TASK_DATA_H_

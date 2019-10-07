@@ -5,43 +5,42 @@
 #include <libsbox/shared_mutex.h>
 
 SharedMutex::SharedMutex() {
-    shared_memory_ = new SharedMemory(sizeof(pthread_mutex_t));
-    mutex_ = (pthread_mutex_t *) shared_memory_->get();
-
     pthread_mutexattr_t mutexattr;
     if (pthread_mutexattr_init(&mutexattr) != 0) {
-        Context::get().die(format("Failed to initialize mutexattr: %m"));
+        ContextManager::get().die(format("Failed to initialize mutexattr: %m"));
     }
     if (pthread_mutexattr_setpshared(&mutexattr, PTHREAD_PROCESS_SHARED) != 0) {
-        Context::get().die(format("Failed to set PTHREAD_PROCESS_SHARED to mutexattr: %m"));
+        ContextManager::get().die(format("Failed to set PTHREAD_PROCESS_SHARED to mutexattr: %m"));
     }
-    if (pthread_mutex_init(mutex_, &mutexattr)) {
-        Context::get().die(format("Failed to initialize mutex: %m"));
+    if (pthread_mutex_init(&mutex_.get(), &mutexattr)) {
+        ContextManager::get().die(format("Failed to initialize mutex: %m"));
     }
     if (pthread_mutexattr_destroy(&mutexattr) != 0) {
-        Context::get().die(format("Failed to destroy mutexattr: %m"));
+        ContextManager::get().die(format("Failed to destroy mutexattr: %m"));
     }
+    owner_pid_ = getpid();
 }
 
 SharedMutex::~SharedMutex() {
-    delete shared_memory_;
+    if (getpid() == owner_pid_) {
+        if (pthread_mutex_destroy(&mutex_.get()) != 0) {
+            ContextManager::get().die(format("Failed to destroy mutex: %m"));
+        }
+    }
 }
 
 void SharedMutex::lock() {
-    if (pthread_mutex_lock(mutex_) != 0) {
-        Context::get().die(format("Failed to lock mutex: %m"));
+    if (pthread_mutex_lock(&mutex_.get()) != 0) {
+        ContextManager::get().die(format("Failed to lock mutex: %m"));
     }
 }
 
 void SharedMutex::unlock() {
-    if (pthread_mutex_unlock(mutex_) != 0) {
-        Context::get().die(format("Failed to unlock mutex: %m"));
+    if (pthread_mutex_unlock(&mutex_.get()) != 0) {
+        ContextManager::get().die(format("Failed to unlock mutex: %m"));
     }
 }
 
-void SharedMutex::destroy() {
-    if (pthread_mutex_destroy(mutex_) != 0) {
-        Context::get().die(format("Failed to destroy mutex: %m"));
-    }
+pthread_mutex_t *SharedMutex::get_mutex() {
+    return &mutex_.get();
 }
-

@@ -10,6 +10,26 @@ compiler:
   - gcc
   - clang
 
+addons:
+  apt:
+    sources:
+    - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'ppa:ubuntu-toolchain-r/test'
+    packages:
+    - clang-9
+    - cmake
+    - gcc-9
+    - g++-9
+
+install:
+- if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
+- if [ "$CXX" = "clang++" ]; then export CXX="clang++-9" CC="clang-9"; fi
+- echo ${CC}
+- echo ${CXX}
+- ${CXX} --version
+- cmake --version
+
 script:
   - mkdir build
   - cd build

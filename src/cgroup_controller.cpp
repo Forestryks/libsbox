@@ -2,16 +2,16 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/cgroup_controller.h>
-#include <libsbox/config.h>
-#include <libsbox/context_manager.h>
-#include <libsbox/utils.h>
+#include "cgroup_controller.h"
+#include "config.h"
+#include "context_manager.h"
+#include "utils.h"
 
 #include <fcntl.h>
 #include <unistd.h>
 
 CgroupController::CgroupController(const std::string &name, const std::string &id) {
-    path_ = Config::get().get_cgroup_root() / name / id;
+    path_ = Config::get().get_cgroup_root() / name / ("libsbox-" + id);
     std::error_code error;
     fs::create_directories(path_, error);
     if (error) {

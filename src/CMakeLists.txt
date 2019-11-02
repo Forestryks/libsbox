@@ -2,23 +2,24 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 17)
 project(libsbox)
 
-add_executable(libsboxd
-    libsbox.cpp
-    config.cpp
+add_executable(
+    libsboxd
+    libsboxd.cpp
     context_manager.cpp
-    daemon.cpp
+    utils.cpp
     shared_memory.cpp
     shared_mutex.cpp
     shared_cond.cpp
-    shared_counter.cpp
-    shared_waiter.cpp
+    shared_lock.cpp
+    shared_id_getter.cpp
+    shared_barrier.cpp
+    config.cpp
     signals.cpp
-    utils.cpp
+    daemon.cpp
     worker.cpp
     container.cpp
-    bind.cpp
     cgroup_controller.cpp
-)
+    bind.cpp bind.h)
 
 target_link_libraries(libsboxd pthread)
 
@@ -35,6 +36,7 @@ install(
     DESTINATION bin
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ WORLD_READ
 )
+
 #
 #install(
 #	CODE

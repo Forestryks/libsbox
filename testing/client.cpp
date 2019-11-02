@@ -59,13 +59,19 @@ void run() {
     massert(close(client_socket) == 0);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    int cnt;
+    if (argc != 2) {
+        cnt = 1;
+    } else {
+        cnt = atoi(argv[1]);
+    }
     string line;
     while (getline(cin, line)) {
         msg += line;
         msg += '\n';
     }
-    for (int i = 0; i < 500; ++i) {
+    for (int i = 0; i < cnt; ++i) {
         run();
     }
 }

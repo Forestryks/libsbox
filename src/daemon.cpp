@@ -2,20 +2,18 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/daemon.h>
-#include <libsbox/utils.h>
-#include <libsbox/signals.h>
-#include <libsbox/config.h>
-#include <libsbox/worker.h>
+#include "daemon.h"
+#include "config.h"
+#include "signals.h"
 
-#include <unistd.h>
-#include <filesystem>
+#include <iostream>
+#include <wait.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <syslog.h>
-#include <signal.h>
-#include <wait.h>
+#include <unistd.h>
+#include <limits.h>
 
 namespace fs = std::filesystem;
 
@@ -25,36 +23,41 @@ Daemon &Daemon::get() {
     return daemon_;
 }
 
-[[noreturn]]
 void Daemon::die(const std::string &error) {
-    syslog(LOG_ERR, "%s", ("[daemon] " + error).c_str());
+    log(error);
     unlink(socket_path_.c_str());
     close(server_socket_fd_);
     unlink("/run/libsboxd.pid");
-    // Kill every process in group, to ensure that no process continue running uncontrolled
-    kill(0, SIGKILL);
-    exit(1);
+    // Thanks to prctl(PR_SET_PDEATHSIG) we can just exit here, and child processes will exit themselves
+    _exit(1);
 }
 
 void Daemon::terminate() {
     terminated_ = true;
 }
 
-[[noreturn]]
 void Daemon::run() {
     ContextManager::set(this);
     prepare();
 
+    pipe2(error_pipe_, O_CLOEXEC | O_DIRECT | O_NONBLOCK);
+
     // Spawn workers
     num_boxes_ = Config::get().get_num_boxes();
-    workers_pids_.reserve(num_boxes_);
+    workers_.reserve(num_boxes_);
     for (int i = 0; i < num_boxes_; ++i) {
-        pid_t pid = Worker::spawn();
-        if (pid == 0) {
-            die(format("Failed to spawn worker number %d: %m", i + 1));
+        Worker *worker = new Worker(server_socket_fd_, id_getter_.get());
+        if (worker->start() < 0) {
+            die(format("Failed to spawn worker: %m"));
         }
-        workers_pids_.push_back(pid);
+        workers_.emplace_back(worker);
     }
+
+    if (close(error_pipe_[1]) != 0) {
+        die(format("Cannot close write end of error pipe: %m"));
+    }
+
+    log("Started, waiting for connections");
 
     while (true) {
         // Wait for signal or for any worker to exit
@@ -62,16 +65,12 @@ void Daemon::run() {
         pid_t pid = wait(&status);
         if (pid < 0) {
             if (!terminated_) {
-                die(format("wait() failed: %m"));
+                die(format("Failed to wait for any worker to exit: %m"));
             }
             break;
         } else {
             // We must die here, because worker shall not exit itself without command from daemon
-            if (WIFEXITED(status)) {
-                die(format("Process %d exited with exitcode %d", pid + 1, WEXITSTATUS(status)));
-            } else {
-                die(format("Process %d was signaled with signal %s", pid + 1, strsignal(WTERMSIG(status))));
-            }
+            die_with_worker_status(status);
         }
     }
 
@@ -82,21 +81,25 @@ void Daemon::run() {
         die(format("Failed to close() socket: %m"));
     }
 
-    // TODO: better termination
-    if (kill(0, SIGKILL) != 0) {
-        die(format("kill() failed: %m"));
+    // Kill all workers and after it wait until no workers continue running TODO
+    for (auto &worker : workers_) {
+        if (kill(worker->get_pid(), SIGTERM) != 0) {
+            die(format("Failed to send SIGTERM to worker: %m"));
+        }
     }
 
-//    while (true) {
-//        int status;
-//        pid_t pid = wait(&status);
-//        if (pid < 0) {
-//            if (errno == ECHILD) {
-//                break;
-//            }
-//            die(format("wait() failed: %m"));
-//        }
-//    }
+    for (int i = 0; i < (int) workers_.size(); ++i) {
+        int status;
+        pid_t pid = wait(&status);
+        if (pid < 0) {
+            die(format("Failed to wait() for worker: %m"));
+        }
+        if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            die_with_worker_status(status);
+        }
+    }
+
+    log("Stopped");
 
     exit(0);
 }
@@ -112,8 +115,20 @@ void Daemon::prepare() {
 
     umask(022);
 
-    // Although we don't use exceptions, some parts of stl as well as nlohmann/json do. So if exception occurs and is
-    // not catched we want die gracefully
+    int fd = open("/run/libsboxd.pid", O_CREAT | O_EXCL | O_WRONLY);
+    if (fd < 0) {
+        // We don't call die() here, because it will try to cleanup and remove /run/libsboxd.pid even if current process
+        // don't own it
+        log(format("Cannot create /run/libsboxd.pid: %m"));
+        exit(1);
+    }
+    if (dprintf(fd, "%d", getpid()) < 0) {
+        die(format("Failed to write pid to /run/libsboxd.pid: %m"));
+    }
+    if (close(fd) != 0) {
+        die(format("Failed to close /run/libsboxd.pid: %m"));
+    }
+
     std::set_terminate([]() {
         ContextManager::get().die("Uncaught exception");
     });
@@ -124,7 +139,6 @@ void Daemon::prepare() {
 
     // Remove socket if exists
     unlink(socket_path_.c_str());
-    errno = 0;
 
     // Create UNIX socket, on which libsboxd will serve
     server_socket_fd_ = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -144,19 +158,42 @@ void Daemon::prepare() {
         die(format("Failed to start listening on socket: %m"));
     }
 
-    // We move daemon process to new process group to easily kill all forked processes
-    if (setpgrp() != 0) {
-        die(format("Failed to move process to new process group: %m"));
+    // All containers must have distinct user ids, so we will use this shared getter to obtain ids
+    id_getter_ = std::make_unique<SharedIdGetter>(Config::get().get_first_uid(), 256);
+}
+
+void Daemon::close_error_pipe_read_end() {
+    if (close(error_pipe_[0]) != 0) {
+        ContextManager::get().die("Cannot close read end of error pipe: %m");
+    }
+}
+
+void Daemon::log(const std::string &error) {
+    std::cerr << "[daemon] " << error << std::endl;
+}
+
+void Daemon::report_error(const std::string &error) {
+    write(error_pipe_[1], error.c_str(), PIPE_BUF);
+}
+
+void Daemon::die_with_worker_status(int status) {
+    char buf[PIPE_BUF + 1];
+    int cnt = read(error_pipe_[0], buf, PIPE_BUF);
+    if (cnt < 0 && errno != EAGAIN) {
+        die(format("Cannot read from error pipe: %m"));
+    }
+    if (cnt > 0) {
+        buf[cnt] = 0;
+        die(format("Reported error: %s", buf));
     }
 
-    // All containers must have distinct user ids, so we will use this shared counter to obtain ids in
-    uid_counter_ = new SharedCounter(Config::get().get_first_uid());
+    if (WIFEXITED(status)) {
+        die(format("Worker exited with exitcode %d", WEXITSTATUS(status)));
+    } else {
+        die(format("Worker was killed with signal %d (%s)", WTERMSIG(status), strsignal(WTERMSIG(status))));
+    }
 }
 
-int Daemon::get_server_socket_fd() const {
-    return server_socket_fd_;
-}
-
-SharedCounter *Daemon::get_uid_counter() const {
-    return uid_counter_;
+int Daemon::get_error_pipe_fd() {
+    return error_pipe_[1];
 }

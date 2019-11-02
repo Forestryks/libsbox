@@ -5,10 +5,13 @@
 #ifndef LIBSBOX_SHARED_COND_H_
 #define LIBSBOX_SHARED_COND_H_
 
-#include <libsbox/shared_mutex.h>
+#include "shared_memory_object.h"
+#include "shared_mutex.h"
 
 #include <unistd.h>
+#include <memory>
 
+// Multiprocess condition variable
 class SharedCond {
 public:
     SharedCond();
@@ -17,7 +20,7 @@ public:
     void notify();
     void notify_all();
 private:
-    SharedMemory<pthread_cond_t> cond_;
+    std::unique_ptr<SharedMemoryObject<pthread_cond_t>> cond_;
     pid_t owner_pid_;
 };
 

@@ -2,9 +2,9 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/config.h>
-#include <libsbox/daemon.h>
-#include <libsbox/utils.h>
+#include "config.h"
+#include "context_manager.h"
+#include "utils.h"
 
 #include <json.hpp>
 #include <fstream>
@@ -23,13 +23,13 @@ const Config &Config::get() {
 void Config::load() {
     std::ifstream in(path_);
     if (!in.is_open()) {
-        Daemon::get().die(format("Cannot open config file %s", path_.string().c_str()));
+        ContextManager::get().die(format("Cannot open config file %s", path_.string().c_str()));
     }
     nlohmann::json json_object;
     try {
         in >> json_object;
     } catch (const nlohmann::json::parse_error &e) {
-        Daemon::get().die(format("Failed to parse config file (%s)", e.what()));
+        ContextManager::get().die(format("Failed to parse config file (%s)", e.what()));
     }
 
     try {
@@ -40,7 +40,7 @@ void Config::load() {
         cgroup_root_ = json_object["cgroup_root"].get<std::string>();
         timer_interval_ms_ = json_object["timer_interval_ms"];
     } catch (const nlohmann::json::type_error &e) {
-        Daemon::get().die(format("Failed to parse config file (%s)", e.what()));
+        ContextManager::get().die(format("Failed to parse config file (%s)", e.what()));
     }
 }
 

@@ -26,7 +26,7 @@
  * 3. Cgroups are used for time and memory limits and measurement. This mechanism work great with multiple processes in
  * a single box.
  * 4. We also use rlimits to limit some of resources.
- * 5. Chroot jail is of course used too
+ * 5. Chroot jail is of course used too.
  * 6. Pipes are used for redirecting streams between different processes running simultaneously.
  *
  * libsboxd maintain the following process tree:
@@ -110,7 +110,7 @@
  *
  * You can find request example in request.json and response example in response.json
  *
- * IMPORTANT: what is said in the next paragraph is not yet implemented TODO
+ * IMPORTANT: what is said in the next paragraph is not yet implemented. Currently all errors lead to libsboxd shutdown TODO
  * There are two types of errors: evaluation errors and internal. While evaluations errors are reported just by
  * returning json object with only one field "error" (e.g. {"error": "Executable not found"}), second are critical and
  * lead to libsboxd termination.
@@ -121,36 +121,20 @@
  * TODO: service stop
  */
 
-#include <libsbox/daemon.h>
-#include <libsbox/utils.h>
+#include "daemon.h"
 
+#include <cstdlib>
 #include <cstring>
-#include <fcntl.h>
-#include <syslog.h>
-#include <unistd.h>
-
-void err(const std::string &msg) {
-    syslog(LOG_ERR, "%s", msg.c_str());
-    exit(1);
-}
-
-#include <iostream>
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp(argv[1], "stop") == 0) {
         exit(system("(cat /run/libsboxd.pid | xargs kill -s SIGTERM); rm /run/libsboxd.pid"));
     }
-
-    openlog("libsboxd", LOG_NDELAY | LOG_PERROR, LOG_DAEMON);
-    int fd = open("/run/libsboxd.pid", O_CREAT | O_EXCL | O_WRONLY);
-    if (fd < 0) {
-        err(format("Cannot create /run/libsboxd.pid: %m"));
+    if (argc == 2 && strcmp(argv[1], "kill") == 0) {
+        exit(system("(cat /run/libsboxd.pid | xargs kill -s SIGKILL); rm /run/libsboxd.pid"));
     }
-    if (dprintf(fd, "%d", getpid()) < 0) {
-        err(format("Failed to write pid: %m"));
-    }
-    if (close(fd) != 0) {
-        err(format("Failed to close pid file: %m"));
+    if (argc == 2 && strcmp(argv[1], "killall") == 0) {
+        exit(system("rm /run/libsboxd.pid; killall libsboxd -s SIGKILL"));
     }
 
     Daemon::get().run();

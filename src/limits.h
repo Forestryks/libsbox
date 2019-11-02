@@ -5,10 +5,10 @@
 #ifndef LIBSBOX_LIMITS_H_
 #define LIBSBOX_LIMITS_H_
 
-#define ARGC_MAX 256
-#define ENVC_MAX 1
+#define ARGC_MAX 128
+#define ENVC_MAX 0
 #define BINDS_MAX 10
-#define ARGV_MAX 8192
-#define ENV_MAX 1
+#define ARGV_MAX 4096
+#define ENV_MAX 0
 
 #endif //LIBSBOX_LIMITS_H_

@@ -14,29 +14,20 @@
 
 namespace fs = std::filesystem;
 
-std::string vformat(const char *fmt, va_list args);
+// Format string using printf format from va_list
+std::string vformat(const char &fmt, va_list args);
 
+// Format string using printf format
 __attribute__((format(printf, 1, 2)))
 std::string format(const char *fmt, ...);
 
-class StringFormatter {
-public:
-    explicit StringFormatter(std::string str) : str(std::move(str)) {}
+// Format c++ string using printf format
+std::string format(const std::string &fmt, ...);
 
-    explicit StringFormatter(const char *ptr) : str(ptr) {}
-
-    template<typename ...T>
-    std::string operator()(T... args) {
-        return format(str.c_str(), args...);
-    }
-
-private:
-    std::string str;
-};
-
-StringFormatter operator "" _format(const char *s, std::size_t len);
-
+// Write data to file with error checks
 void write_file(const fs::path &path, const std::string &data);
+
+// Read whole file specified by path with error checks
 std::string read_file(const fs::path &path);
 
 #endif //LIBSBOX_UTILS_H_

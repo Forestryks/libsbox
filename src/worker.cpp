@@ -2,88 +2,117 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/worker.h>
-#include <libsbox/daemon.h>
+#include "worker.h"
+#include "daemon.h"
+#include "signals.h"
 
-#include <unistd.h>
-#include <syslog.h>
+#include <sys/prctl.h>
+#include <signal.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
+#include <iostream>
 
-Worker Worker::worker_;
+Worker *Worker::worker_ = nullptr;
+
+Worker::Worker(int server_socket_fd, SharedIdGetter *id_getter)
+    : server_socket_fd_(server_socket_fd), id_getter_(id_getter) {}
 
 Worker &Worker::get() {
-    return worker_;
+    return *worker_;
 }
 
-pid_t Worker::spawn() {
-    pid_t pid = fork();
-    if (pid != 0) {
-        // In parent we just return, so spawn() just returns like fork()
-        return pid;
+pid_t Worker::start() {
+    pid_ = fork();
+    if (pid_ != 0) {
+        return pid_;
     }
 
-    Worker::get().serve();
-    Worker::get().die("We should not get there");
+    serve();
+    die(format("We should not get here"));
+    _exit(1);
 }
 
-[[noreturn]]
+// TODO: never use exit(), use _exit()
+
 void Worker::die(const std::string &error) {
-    syslog(LOG_ERR, "%s", ("[worker] " + error).c_str());
-    exit(1);
+    Daemon::get().report_error("[worker] " + error);
+    _exit(1);
 }
 
 void Worker::terminate() {
     terminated_ = true;
 }
 
-[[noreturn]]
+pid_t Worker::get_pid() const {
+    return pid_;
+}
+
+void sigchld_action_wrapper(int, siginfo_t *siginfo, void *) {
+    Worker::get().sigchld_action(siginfo);
+}
+
 void Worker::serve() {
+    worker_ = this;
     ContextManager::set(this);
-    server_socket_fd_ = Daemon::get().get_server_socket_fd();
+
+    Daemon::get().close_error_pipe_read_end();
+
+    // Worker will die if parent exits
+    if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0) {
+        die(format("Cannot set parent death signal: %m"));
+    }
+    // To prevent race condition
+    if (getppid() == 0) {
+        raise(SIGKILL);
+    }
+
+    // TODO: restore default in containers
+    // We need check containers' exit codes asynchronously to avoid deadlocks
+    struct sigaction action{};
+    action.sa_sigaction = sigchld_action_wrapper;
+    action.sa_flags = (SA_SIGINFO | SA_RESTART);
+    if (sigaction(SIGCHLD, &action, nullptr) != 0) {
+        die(format("Failed to set sigaction to SIGCHLD: %m"));
+    }
 
     while (!terminated_) {
+        // If worker is terminated we want accept() to be interrupted
+        set_standard_handler_restart(SIGTERM, false);
+
+        // Accept connection on socket
         socket_fd_ = accept(server_socket_fd_, nullptr, nullptr);
         if (socket_fd_ < 0) {
             if (terminated_) {
-                continue;
+                break;
             }
             die(format("Failed to accept connection: %m"));
         }
 
-        // read from socket until null-byte
-        bool data_received = true;
-        std::string data;
+        // If worker is terminated we want to complete current response, so we don't want to interrupt anything
+        set_standard_handler_restart(SIGTERM, true);
+
+        // Read from socket until end-of-file or null-byte
+        std::string request;
         while (true) {
             char buf[1024];
             int bytes_read = recv(socket_fd_, buf, sizeof(buf) - 1, 0);
             if (bytes_read < 0) {
-                if (terminated_) {
-                    data_received = false;
-                    break;
-                }
                 die(format("Failed to receive data: %m"));
             }
             if (bytes_read == 0) {
-                // die("Request must end with \\0");
                 break;
             }
 
             buf[bytes_read] = 0;
-
-            data += buf;
+            request += buf;
 
             if ((int) strlen(buf) < bytes_read) {
-                // null-byte character occurs in buf
+                // null-byte occurs in buf
                 break;
             }
         }
 
-        if (!data_received) {
-            close(socket_fd_);
-            continue;
-        }
-
-        std::string response = process(data);
+        std::string response = process(request);
 
         if (write(socket_fd_, response.c_str(), response.size()) != (int) response.size()) {
             die(format("Cannot send response: %m"));
@@ -99,15 +128,15 @@ void Worker::serve() {
 
 std::string Worker::process(const std::string &request) {
     nlohmann::json json_request = parse_json(request);
+
     prepare_containers(json_request);
-
-    run_start_waiter_.wait(tasks_cnt_);
-
+    // To start execution we must wait for worker + (all containers)
+    run_start_barrier_.reset((int) containers_.size() + 1);
+    write_tasks(json_request);
+    run_tasks();
     close_pipes();
 
-    run_end_waiter_.wait(tasks_cnt_);
-
-    return get_results();
+    return collect_results();
 }
 
 nlohmann::json Worker::parse_json(const std::string &request) {
@@ -115,9 +144,8 @@ nlohmann::json Worker::parse_json(const std::string &request) {
     try {
         json_object = nlohmann::json::parse(request);
     } catch (nlohmann::json::exception &e) {
-        die(format("Failed to parse request: %s", e.what()));
+        die(format("Failed to parse json: %s", e.what()));
     }
-
     return json_object;
 }
 
@@ -127,22 +155,105 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
     }
 
     assert(pipes_.empty());
+    assert(containers_.empty());
 
     try {
         const nlohmann::json &json_tasks = json_request.at("tasks");
-        tasks_cnt_ = json_tasks.size();
-        while ((int) containers_.size() < tasks_cnt_) {
-            containers_.push_back(new Container(Daemon::get().get_uid_counter()->get_and_inc()));
-            if (containers_.back()->start() < 0) {
-                die(format("Cannot fork() container: %m"));
+        int last_persistent_container = 0;
+        for (const auto &json_task : json_tasks) {
+            bool persistent_allowed = true;
+            if (json_task.at("ipc").get<bool>()) {
+                persistent_allowed = false;
+            }
+
+            Container *created_container = nullptr;
+            if (persistent_allowed) {
+                if (last_persistent_container == (int) persistent_containers_.size()) {
+                    created_container = new Container(id_getter_->get(), true);
+                    persistent_containers_.emplace_back(created_container);
+                }
+                containers_.push_back(persistent_containers_[last_persistent_container].get());
+                last_persistent_container++;
+            } else {
+                // TODO: put id
+                // TODO: remove temporary
+                // TODO: cleanup containers_
+                created_container = new Container(id_getter_->get(), false);
+                temporary_containers_.emplace_back(created_container);
+                containers_.push_back(created_container);
+            }
+
+            if (created_container != nullptr) {
+                if (created_container->start() < 0) {
+                    die(format("Cannot start() container: %m"));
+                }
             }
         }
 
-        for (int id = 0; id < tasks_cnt_; ++id) {
-            containers_[id]->get_task_data_from_json(json_tasks.at(id));
+        assert(json_tasks.size() == containers_.size());
+    } catch (const nlohmann::json::exception &e) {
+        die(format("Failed to parse request: %s", e.what()));
+    }
+}
+
+void Worker::write_tasks(const nlohmann::json &json_request) {
+    try {
+        const nlohmann::json &json_tasks = json_request.at("tasks");
+        for (int i = 0; i < (int) json_tasks.size(); ++i) {
+            containers_[i]->get_task_from_json(json_tasks[i]);
         }
     } catch (const nlohmann::json::exception &e) {
         die(format("Failed to parse request: %s", e.what()));
+    }
+}
+
+void Worker::run_tasks() {
+    // Containers are wait()ing for tasks on their barriers
+    for (auto *container : containers_) {
+        container->get_barrier()->wait();
+    }
+    // Wait for run start
+    run_start_barrier_.wait();
+}
+
+std::string Worker::collect_results() {
+    std::string result;
+    nlohmann::json json_result;
+    try {
+        json_result["tasks"] = nlohmann::json::array();
+        // Containers will wait() on their barriers when results are ready
+        for (auto *container : containers_) {
+            container->get_barrier()->wait();
+            json_result["tasks"].push_back(container->results_to_json());
+        }
+
+        result = json_result.dump();
+    } catch (nlohmann::json::exception &e) {
+        die(format("Failed to serialize results: %s", e.what()));
+    }
+
+    for (auto &container : temporary_containers_) {
+        id_getter_->put(container->get_id());
+        int status;
+        pid_t pid = waitpid(container->get_pid(), &status, 0);
+        if (pid < 0) {
+            die(format("Cannot wait() for temporary container: %m"));
+        }
+        // We don't need to check status here, it was checked in sigaction
+    }
+    temporary_containers_.clear();
+    containers_.clear();
+
+    return result;
+}
+
+void Worker::sigchld_action(siginfo_t *siginfo) {
+    if (siginfo->si_code != CLD_EXITED || siginfo->si_status != 0) {
+        if (siginfo->si_code == CLD_EXITED) {
+            die(format("Container exited with exit code %d", siginfo->si_status));
+        } else {
+            die(format("Container received signal %d (%s)", siginfo->si_status, strsignal(siginfo->si_status)));
+        }
     }
 }
 
@@ -167,27 +278,9 @@ void Worker::close_pipes() {
             die(format("Cannot close write end of pipe: %m"));
         }
     }
+    pipes_.clear();
 }
 
-std::string Worker::get_results() {
-    nlohmann::json result;
-    try {
-        result["tasks"] = nlohmann::json::array();
-        for (int id = 0; id < (int) tasks_cnt_; ++id) {
-            result["tasks"].push_back(containers_[id]->results_to_json());
-        }
-
-        return result.dump();
-    } catch (nlohmann::json::exception &e) {
-        die(format("Failed to serialize result: %s", e.what()));
-    }
-    exit(-1); // we should not get here
-}
-
-SharedWaiter & Worker::get_run_start_waiter() {
-    return run_start_waiter_;
-}
-
-SharedWaiter & Worker::get_run_end_waiter() {
-    return run_end_waiter_;
+SharedBarrier *Worker::get_run_start_barrier() {
+    return &run_start_barrier_;
 }

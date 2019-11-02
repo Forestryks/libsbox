@@ -5,9 +5,12 @@
 #ifndef LIBSBOX_SHARED_MUTEX_H_
 #define LIBSBOX_SHARED_MUTEX_H_
 
-#include <libsbox/shared_memory.h>
-#include <unistd.h>
+#include "shared_memory_object.h"
 
+#include <unistd.h>
+#include <memory>
+
+// Multiprocess mutex
 class SharedMutex {
 public:
     SharedMutex();
@@ -16,7 +19,7 @@ public:
     void unlock();
     pthread_mutex_t *get_mutex();
 private:
-    SharedMemory<pthread_mutex_t> mutex_;
+    std::unique_ptr<SharedMemoryObject<pthread_mutex_t>> mutex_;
     pid_t owner_pid_;
 };
 

@@ -9,11 +9,14 @@
 
 class ContextManager {
 public:
+    // Get current context manager
     static ContextManager &get();
+    // Set new context manager. Must be called as fast as possible after fork() or clone()
     static void set(ContextManager *context);
 
-    [[noreturn]]
-    virtual void die(const std::string &error) = 0;
+    // Called on critical error
+    [[noreturn]] virtual void die(const std::string &error) = 0;
+    // Called when receiving SIGTERM asynchronously (in signal handler)
     virtual void terminate() = 0;
 private:
     static ContextManager *context_;

@@ -5,7 +5,7 @@
 #ifndef LIBSBOX_BIND_H_
 #define LIBSBOX_BIND_H_
 
-#include <libsbox/task_data.h>
+#include "task_data.h"
 
 #include <string>
 #include <vector>

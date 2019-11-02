@@ -2,7 +2,9 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/shared_memory.h>
+#include "shared_memory.h"
+
+#include <sys/mman.h>
 
 void *allocate_shared_memory(size_t size) {
     return mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);

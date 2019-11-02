@@ -21,6 +21,7 @@ public:
     [[nodiscard]] int get_timer_interval_ms() const;
 private:
     static Config config_;
+
     void load();
     static bool loaded_;
     const static fs::path path_;

@@ -2,115 +2,128 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/container.h>
-#include <libsbox/worker.h>
-#include <libsbox/config.h>
-#include <libsbox/bind.h>
-#include <libsbox/signals.h>
+#include "container.h"
+#include "daemon.h"
+#include "config.h"
+#include "signals.h"
+#include "bind.h"
 
 #include <signal.h>
-#include <sys/mount.h>
-#include <syslog.h>
-#include <sys/time.h>
-#include <wait.h>
+#include <sys/prctl.h>
 #include <fcntl.h>
-#include <grp.h>
+#include <sys/mount.h>
+#include <wait.h>
+#include <iostream>
+#include <sys/time.h>
 #include <dirent.h>
+#include <grp.h>
 
-Container *Container::container_;
+// TODO: remove debug output
+// TODO: remove #include <iostream>
 
-Container &Container::get() {
-    return *container_;
-}
+Container::Container(int id, bool persistent) : id_(id), persistent_(persistent) {}
 
-Container::Container(int id) : id_(id) {}
-
-[[noreturn]]
 void Container::die(const std::string &error) {
     if (slave_pid_ == 0) {
-        syslog(LOG_ERR, "%s", ("[slave] " + error).c_str());
+        // TODO: don't close error pipe before exec
         task_data_->error = true;
+        Daemon::get().report_error("[slave] " + error);
     } else {
-        syslog(LOG_ERR, "%s", ("[container] " + error).c_str());
+        Daemon::get().report_error("[container] " + error);
         if (cpuacct_controller_ != nullptr) cpuacct_controller_->die();
         if (memory_controller_ != nullptr) memory_controller_->die();
     }
 
-    exit(1);
+    _exit(1);
 }
 
 void Container::terminate() {
-    // TODO
+    die("Container should never be terminated");
 }
 
-void Container::get_task_data_from_json(const nlohmann::json &json_task) {
-    // TODO: getters/check
+int Container::get_id() {
+    return id_;
+}
+
+pid_t Container::get_pid() {
+    return pid_;
+}
+
+SharedBarrier *Container::get_barrier() {
+    return &barrier_;
+}
+
+void Container::get_task_from_json(const nlohmann::json &json_task) {
     task_data_->time_limit_ms = json_task["time_limit_ms"];
     task_data_->wall_time_limit_ms = json_task["wall_time_limit_ms"];
     task_data_->memory_limit_kb = json_task["memory_limit_kb"];
     task_data_->fsize_limit_kb = json_task["fsize_limit_kb"];
     task_data_->max_files = json_task["max_files"];
     task_data_->max_threads = json_task["max_threads"];
+    task_data_->ipc = json_task["ipc"];
 
     task_data_->stdin_desc.fd = -1;
-    task_data_->stdin_desc.filename[0] = 0;
+    task_data_->stdin_desc.filename = "";
     if (!json_task["stdin"].is_null() && !json_task["stdin"].empty()) {
         std::string stdin_filename = json_task["stdin"];
         if (stdin_filename[0] == '@') {
             const auto &pipe = Worker::get().get_pipe(stdin_filename.substr(1));
             task_data_->stdin_desc.fd = pipe.first;
         } else {
-            strcpy(task_data_->stdin_desc.filename, stdin_filename.c_str());
+            task_data_->stdin_desc.filename = stdin_filename;
         }
     }
 
     task_data_->stdout_desc.fd = -1;
-    task_data_->stdout_desc.filename[0] = 0;
+    task_data_->stdout_desc.filename = "";
     if (!json_task["stdout"].is_null() && !json_task["stdout"].empty()) {
         std::string stdout_filename = json_task["stdout"];
         if (stdout_filename[0] == '@') {
             const auto &pipe = Worker::get().get_pipe(stdout_filename.substr(1));
             task_data_->stdout_desc.fd = pipe.second;
         } else {
-            strcpy(task_data_->stdout_desc.filename, stdout_filename.c_str());
+            task_data_->stdout_desc.filename = stdout_filename;
         }
     }
 
+    // TODO: -2 = dup stdout
     task_data_->stderr_desc.fd = -1;
-    task_data_->stderr_desc.filename[0] = 0;
+    task_data_->stderr_desc.filename = "";
     if (!json_task["stderr"].is_null() && !json_task["stderr"].empty()) {
         std::string stderr_filename = json_task["stderr"];
         if (stderr_filename[0] == '@') {
-            const auto &pipe = Worker::get().get_pipe(stderr_filename.substr(1));
-            task_data_->stderr_desc.fd = pipe.second;
+            std::string pipe_name = stderr_filename.substr(1);
+            if (pipe_name == "stdout") {
+                task_data_->stderr_desc.fd = -2;
+            } else {
+                const auto &pipe = Worker::get().get_pipe(pipe_name);
+                task_data_->stderr_desc.fd = pipe.second;
+            }
         } else {
-            strcpy(task_data_->stderr_desc.filename, stderr_filename.c_str());
+            task_data_->stderr_desc.filename = stderr_filename;
         }
     }
 
     int argv_size = json_task.at("argv").size();
-    int ptr = 0;
+    task_data_->argv.clear();
     for (int i = 0; i < argv_size; ++i) {
-        task_data_->argv[i] = task_data_->argv_data + ptr;
-        std::string arg = json_task.at("argv")[i];
-        strcpy(task_data_->argv_data + ptr, arg.c_str());
-        ptr += (int) arg.size() + 1;
-        if (ptr > ARGC_MAX) {
-            ContextManager::get().die(format("Arguments length must be less that %d", ARGC_MAX));
-        }
+        task_data_->argv.add(json_task.at("argv").at(i));
     }
-    task_data_->argv[argv_size] = nullptr;
 
-    task_data_->env[0] = nullptr;
+    // ENV to do?
+    task_data_->env.clear();
 
-    task_data_->bind_count = json_task.at("binds").size();
-    for (int i = 0; i < task_data_->bind_count; ++i) {
-        std::string inside = json_task.at("binds")[i]["inside"];
-        std::string outside = json_task.at("binds")[i]["outside"];
-        int flags = json_task.at("binds")[i]["flags"];
-        strcpy(task_data_->binds[i].inside, inside.c_str());
-        strcpy(task_data_->binds[i].outside, outside.c_str());
-        task_data_->binds[i].flags = flags;
+    task_data_->binds.clear();
+    for (const auto &bind : json_task.at("binds")) {
+        std::string inside = bind["inside"];
+        std::string outside = bind["outside"];
+        int flags = bind["flags"];
+        // TODO: fix
+        task_data_->binds.push_back({});
+        int id = (int) task_data_->binds.size() - 1;
+        task_data_->binds[id].inside = inside;
+        task_data_->binds[id].outside = outside;
+        task_data_->binds[id].flags = flags;
     }
 
     task_data_->time_usage_ms = -1;
@@ -128,9 +141,10 @@ void Container::get_task_data_from_json(const nlohmann::json &json_task) {
     task_data_->oom_killed = false;
 
     task_data_->error = false;
-
-    task_data_write_waiter_.sub();
 }
+
+// TODO: disable standard rules
+// TODO: setters/getters in task_data
 
 nlohmann::json Container::results_to_json() {
     return nlohmann::json::object({
@@ -164,28 +178,32 @@ pid_t Container::start() {
     // CLONE_NEWNET - create new network namespace to block network
     // CLONE_NEWNS - create new mount namespace (used for safety reasons)
     // CLONE_NEWPID - create new pid namespace to hide other processes
-    pid_t pid = clone(
+    pid_ = clone(
         clone_callback,
         clone_stack + clone_stack_size,
-        SIGCHLD | CLONE_FILES | CLONE_PARENT | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID,
+        SIGCHLD | CLONE_FILES | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID,
         this
     );
     delete[] clone_stack;
 
-    return pid;
+    return pid_;
 }
+
+// TODO: error pipe capacity?
+// TODO: logging
+// TODO: optimize memory (delete all unnecessary before entering cgroups)
 
 void Container::serve() {
     ContextManager::set(this);
-    container_ = this;
     prepare();
 
     while (true) {
-        task_data_write_waiter_.wait(1);
+        // Wait for task
+        barrier_.wait();
 
         std::vector<Bind> binds;
 
-        for (int i = 0; i < task_data_->bind_count; ++i) {
+        for (size_t i = 0; i < task_data_->binds.size(); ++i) {
             binds.emplace_back(&task_data_->binds[i]);
             binds[i].mount(root_, work_dir_);
         }
@@ -195,33 +213,53 @@ void Container::serve() {
 
         slave_pid_ = fork();
         if (slave_pid_ < 0) {
-            die(format("Fork() failed: %m"));
+            die(format("fork() failed: %m"));
         }
         if (slave_pid_ == 0) {
             slave();
         }
 
-        Worker::get().get_run_start_waiter().sub();
+        // Run started
+        Worker::get().get_run_start_barrier()->wait();
 
         wait_for_slave();
 
         for (auto &bind : binds) {
+            // TODO: save in Bind
             bind.umount(root_, work_dir_);
         }
 
         delete cpuacct_controller_;
-        delete memory_controller_;
         cpuacct_controller_ = nullptr;
+        delete memory_controller_;
         memory_controller_ = nullptr;
 
-        Worker::get().get_run_end_waiter().sub();
+        // Results ready
+        barrier_.wait();
+
+        if (!persistent_) break;
     }
+
+    _exit(0);
 }
 
 void Container::prepare() {
     root_ = Config::get().get_box_dir();
+
+    if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0) {
+        die(format("Cannot set parent death signal: %m"));
+    }
+    // To prevent race condition
+    if (getppid() == 0) {
+        raise(SIGKILL);
+    }
+
+    reset_signals();
+
     prepare_root();
-    prepare_ipcs();
+    if (persistent_) {
+        disable_ipcs();
+    }
 }
 
 void Container::prepare_root() {
@@ -261,7 +299,7 @@ void Container::prepare_root() {
     }
 }
 
-void Container::prepare_ipcs() {
+void Container::disable_ipcs() {
     write_file("/proc/sys/kernel/msgmni", "0");
     write_file("/proc/sys/kernel/shmmni", "0");
     write_file("/proc/sys/kernel/sem", "0 0 0 0");
@@ -275,9 +313,11 @@ void Container::wait_for_slave() {
         int status;
         pid_t pid = waitpid(slave_pid_, &status, 0);
         if (pid != slave_pid_) {
-            if (errno != EINTR || interrupt_signal != SIGALRM) {
+            if (!timer_interrupt) {
                 die(format("waitpid() failed: %m"));
             }
+
+            timer_interrupt = false;
 
             if (task_data_->time_limit_ms != -1 && get_time_usage_ms() > task_data_->time_limit_ms) {
                 kill_all();
@@ -376,26 +416,29 @@ bool Container::is_oom_killed() {
 }
 
 void Container::freopen_fds() {
-    if (task_data_->stdin_desc.filename[0] != 0) {
-        task_data_->stdin_desc.fd = open(task_data_->stdin_desc.filename, O_RDONLY);
+    if (task_data_->stdin_desc.filename.empty()) {
+        task_data_->stdin_desc.fd = open(task_data_->stdin_desc.filename.c_str(), O_RDONLY);
         if (task_data_->stdin_desc.fd < 0) {
-            die(format("Cannot open '%s': %m", task_data_->stdin_desc.filename));
+            die(format("Cannot open '%s': %m", task_data_->stdin_desc.filename.c_str()));
         }
     }
 
-    if (task_data_->stdout_desc.filename[0] != 0) {
+    if (!task_data_->stdout_desc.filename.empty()) {
         task_data_->stdout_desc.fd =
-            open(task_data_->stdout_desc.filename, O_WRONLY | O_TRUNC); // TODO: remove O_CREAT?
+            open(task_data_->stdout_desc.filename.c_str(), O_WRONLY | O_TRUNC); // TODO: remove O_CREAT?
         if (task_data_->stdout_desc.fd < 0) {
-            die(format("Cannot open '%s': %m", task_data_->stdout_desc.filename));
+            die(format("Cannot open '%s': %m", task_data_->stdout_desc.filename.c_str()));
         }
     }
 
     if (task_data_->stderr_desc.filename[0] != 0) {
-        task_data_->stderr_desc.fd = open(task_data_->stderr_desc.filename, O_WRONLY | O_TRUNC);
+        task_data_->stderr_desc.fd = open(task_data_->stderr_desc.filename.c_str(), O_WRONLY | O_TRUNC);
         if (task_data_->stderr_desc.fd < 0) {
-            die(format("Cannot open '%s': %m", task_data_->stderr_desc.filename));
+            die(format("Cannot open '%s': %m", task_data_->stderr_desc.filename.c_str()));
         }
+    }
+    if (task_data_->stderr_desc.fd == -2) {
+        task_data_->stderr_desc.fd = 1;
     }
 }
 
@@ -445,7 +488,7 @@ void Container::close_all_fds() {
         long fd = strtol(dentry->d_name, &end, 10);
         if (*end) continue;
 
-        if ((fd >= 0 && fd <= 2) || fd == dir_fd || fd == exec_fd_)
+        if ((fd >= 0 && fd <= 2) || fd == dir_fd || fd == exec_fd_ || fd == Daemon::get().get_error_pipe_fd())
             continue;
         if (close((int) fd) != 0) {
             die(format("Cannot close fd %ld: %m", fd));
@@ -465,7 +508,6 @@ void Container::set_rlimit_ext(const char *res_name, int res, rlim_t limit) {
 }
 
 #define set_rlimit(res, limit) set_rlimit_ext(#res, res, limit)
-
 void Container::setup_rlimits() {
     if (task_data_->fsize_limit_kb != -1) {
         set_rlimit(RLIMIT_FSIZE, task_data_->fsize_limit_kb);
@@ -477,7 +519,6 @@ void Container::setup_rlimits() {
     set_rlimit(RLIMIT_MEMLOCK, 0);
     set_rlimit(RLIMIT_MSGQUEUE, 0);
 }
-
 #undef set_rlimit
 
 void Container::setup_credentials() {
@@ -495,7 +536,6 @@ void Container::setup_credentials() {
     }
 }
 
-[[noreturn]]
 void Container::slave() {
     fs::path executable = task_data_->argv[0];
     if (!executable.is_absolute()) {
@@ -517,6 +557,7 @@ void Container::slave() {
     freopen_fds();
     dup2_fds();
     close_all_fds();
+
     memory_controller_->enter();
     cpuacct_controller_->enter();
     setup_rlimits();
@@ -527,8 +568,7 @@ void Container::slave() {
 
     setup_credentials();
 
-    closelog();
-    fexecve(exec_fd_, task_data_->argv, task_data_->env);
+    fexecve(exec_fd_, task_data_->argv.get(), task_data_->env.get());
     die(format("Failed to exec target: %m"));
     exit(-1); // we should not get here
 }

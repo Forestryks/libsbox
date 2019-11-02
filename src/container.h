@@ -2,45 +2,48 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#ifndef LIBSBOX_CONTAINER_H_
-#define LIBSBOX_CONTAINER_H_
+#ifndef LIBSBOX_CONTAINER_H
+#define LIBSBOX_CONTAINER_H
 
-#include <libsbox/context_manager.h>
-#include <libsbox/limits.h>
-#include <libsbox/task_data.h>
-#include <libsbox/shared_memory.h>
-#include <libsbox/shared_waiter.h>
-#include <libsbox/cgroup_controller.h>
+#include "context_manager.h"
+#include "shared_barrier.h"
+#include "task_data.h"
+#include "cgroup_controller.h"
 
 #include <filesystem>
 #include <json.hpp>
-#include <zconf.h>
 #include <sys/resource.h>
+
+// TODO: cleanup cgroups
 
 namespace fs = std::filesystem;
 
 class Container : public ContextManager {
 public:
-    explicit Container(int id);
+    Container(int id, bool persistent);
     ~Container() = default;
 
-    static Container &get();
-
     pid_t start();
-    void get_task_data_from_json(const nlohmann::json &json_task);
+    void get_task_from_json(const nlohmann::json &json_task);
     nlohmann::json results_to_json();
 
+    int get_id();
+    pid_t get_pid();
+    SharedBarrier *get_barrier();
+
     [[noreturn]]
-    void die(const std::string &error) override;
+    void die(const std::string &error) override ;
     void terminate() override;
 private:
-    static Container *container_;
-
     int id_;
-    SharedMemory<TaskData> task_data_;
-    SharedWaiter task_data_write_waiter_;
+    pid_t pid_{};
+    bool persistent_;
+    SharedMemoryObject<TaskData> task_data_{};
+    SharedBarrier barrier_{2};
     fs::path root_;
     fs::path work_dir_;
+
+    // TODO: constructors and destructors must not create/destroy shared data
     CgroupController *cpuacct_controller_ = nullptr;
     CgroupController *memory_controller_ = nullptr;
     pid_t slave_pid_ = -1;
@@ -50,7 +53,7 @@ private:
     void serve();
     void prepare();
     void prepare_root();
-    void prepare_ipcs();
+    void disable_ipcs();
     void wait_for_slave();
     void kill_all();
     void reset_wall_clock();
@@ -73,4 +76,4 @@ private:
     void setup_credentials();
 };
 
-#endif //LIBSBOX_CONTAINER_H_
+#endif //LIBSBOX_CONTAINER_H

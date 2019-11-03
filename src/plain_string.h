@@ -24,6 +24,7 @@ public:
     using const_pointer = const value_type *;
 
     PlainString() = default;
+    PlainString(const std::basic_string<value_type> &str);
     ~PlainString() = default;
 
     reference at(size_type pos);
@@ -74,6 +75,11 @@ private:
     void append(const_pointer str, size_type len);
     bool equals(const_pointer str, size_type len);
 };
+
+template<size_t MaxSize>
+PlainString<MaxSize>::PlainString(const std::basic_string<value_type> &str) {
+    this->set(str.c_str(), str.size());
+}
 
 template<size_t MaxSize>
 typename PlainString<MaxSize>::reference

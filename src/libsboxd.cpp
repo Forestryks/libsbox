@@ -146,7 +146,7 @@
 // TODO(#22@forestryks): never use exit(), use _exit()
 // TODO(#23@forestryks): restore default SIGCHLD in containers
 // TODO(#24@forestryks): don't use C-style casts
-
+// TODO(#25@forestryks): add tests
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp(argv[1], "stop") == 0) {

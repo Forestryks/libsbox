@@ -18,6 +18,8 @@ struct IOStream {
 };
 
 struct BindData {
+    BindData(const std::string &inside, const std::string &outside, int flags)
+        : inside(inside), outside(outside), flags(flags) {};
     PlainString<PATH_MAX> inside;
     PlainString<PATH_MAX> outside;
     int flags{};

@@ -169,6 +169,7 @@ PlainVector<T, MaxSize>::emplace_back(Args &&... args) {
     pointer ptr = reinterpret_cast<pointer>(data_) + size_;
     new(ptr) value_type(args...);
     size_++;
+    return back();
 }
 
 template<class T, size_t MaxSize>

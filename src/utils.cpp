@@ -5,8 +5,12 @@
 #include "utils.h"
 #include "context_manager.h"
 
-#include <fcntl.h>
+#include <vector>
+#include <cstring>
+#include <cstdarg>
+#include <string>
 #include <unistd.h>
+#include <fcntl.h>
 
 std::string vformat(const char *fmt, va_list args) {
     std::vector<char> result(strlen(fmt) * 2);

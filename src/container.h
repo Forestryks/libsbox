@@ -7,11 +7,12 @@
 
 #include "context_manager.h"
 #include "shared_barrier.h"
+#include "shared_memory_object.h"
 #include "task_data.h"
 #include "cgroup_controller.h"
 
-#include <filesystem>
 #include <json.hpp>
+#include <filesystem>
 #include <sys/resource.h>
 
 namespace fs = std::filesystem;

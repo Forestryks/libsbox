@@ -7,7 +7,7 @@
 
 #include "shared_memory_object.h"
 
-#include <unistd.h>
+#include <pthread.h>
 #include <memory>
 
 // Multiprocess mutex

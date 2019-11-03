@@ -5,12 +5,10 @@
 #ifndef LIBSBOX_PLAIN_VECTOR_H
 #define LIBSBOX_PLAIN_VECTOR_H
 
-#include "context_manager.h"
-#include "utils.h"
-
-#include <sys/types.h>
-#include <string>
-#include <cstring>
+#include <stddef.h> // for size_t
+#include <cstddef>  // for std::byte
+#include <type_traits>
+#include <stdexcept>
 
 template<class T, size_t MaxSize>
 class PlainVector {
@@ -176,7 +174,7 @@ template<class T, size_t MaxSize>
 void PlainVector<T, MaxSize>::pop_back() {
     size_--;
     pointer ptr = reinterpret_cast<pointer>(data_) + size_;
-    if (std::is_destructible<value_type>::value) {
+    if (std::is_destructible_v<value_type>) {
         ptr->~value_type();
     }
 }

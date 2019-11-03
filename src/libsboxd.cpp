@@ -116,14 +116,9 @@
  * lead to libsboxd termination.
  */
 
-#include "daemon.h"
-
-#include <cstdlib>
-#include <cstring>
-
-// TODO(#0@forestryks): optimize includes
+// CLOSED(#0@forestryks): optimize includes
 // TODO(#1@forestryks): remove debug output
-// TODO(#2@forestryks): remove #include <iostream>
+// CLOSED(#2@forestryks): remove #include <iostream>
 // TODO(#3@forestryks): don't close error pipe before exec
 // TODO(#4@forestryks): -2 = dup stdout
 // TODO(#5@forestryks): disable standard rules parameter
@@ -147,6 +142,11 @@
 // TODO(#23@forestryks): restore default SIGCHLD in containers
 // TODO(#24@forestryks): don't use C-style casts
 // TODO(#25@forestryks): add tests
+
+#include "daemon.h"
+
+#include <cstring>
+#include <cstdlib>
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp(argv[1], "stop") == 0) {

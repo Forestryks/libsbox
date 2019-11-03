@@ -3,6 +3,10 @@
  */
 
 #include "shared_mutex.h"
+#include "context_manager.h"
+
+#include <unistd.h>
+#include <memory>
 
 SharedMutex::SharedMutex() {
     mutex_ = std::make_unique<SharedMemoryObject<pthread_mutex_t>>();

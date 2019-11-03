@@ -6,9 +6,10 @@
 #define LIBSBOX_SHARED_MEMORY_ARRAY_H
 
 #include "shared_memory.h"
-#include "context_manager.h"
 #include "utils.h"
+#include "context_manager.h"
 
+#include <stddef.h>
 #include <sys/mman.h>
 
 // Class that holds array of objects created in shared memory

@@ -7,7 +7,6 @@
 #include "utils.h"
 
 #include <sys/mount.h>
-#include <iostream>
 
 Bind::Bind(fs::path inside, fs::path outside, int flags)
     : inside_(std::move(inside)), outside_(std::move(outside)), flags_(flags) {}

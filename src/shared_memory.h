@@ -5,7 +5,7 @@
 #ifndef LIBSBOX_SHARED_MEMORY_H_
 #define LIBSBOX_SHARED_MEMORY_H_
 
-#include <sys/types.h>
+#include <stddef.h>
 
 // Allocate memory which will be shared between descendant processes
 void *allocate_shared_memory(size_t size);

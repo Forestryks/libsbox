@@ -6,8 +6,8 @@
 #define LIBSBOX_SHARED_MEMORY_OBJECT_H
 
 #include "shared_memory.h"
-#include "context_manager.h"
 #include "utils.h"
+#include "context_manager.h"
 
 #include <sys/mman.h>
 

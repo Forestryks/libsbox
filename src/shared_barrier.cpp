@@ -3,9 +3,10 @@
  */
 
 #include "shared_barrier.h"
+#include "context_manager.h"
+#include "utils.h"
 
-#include <zconf.h>
-#include <iostream>
+#include <unistd.h>
 
 SharedBarrier::SharedBarrier(int count) {
     barrier_ = std::make_unique<SharedMemoryObject<pthread_barrier_t>>();

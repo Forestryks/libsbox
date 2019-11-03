@@ -6,11 +6,10 @@
 #include "daemon.h"
 #include "signals.h"
 
+#include <unistd.h>
 #include <sys/prctl.h>
-#include <signal.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-#include <iostream>
 
 Worker *Worker::worker_ = nullptr;
 

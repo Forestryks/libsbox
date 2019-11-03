@@ -7,7 +7,6 @@
 #include "context_manager.h"
 #include "utils.h"
 
-#include <fcntl.h>
 #include <unistd.h>
 
 CgroupController::CgroupController(const std::string &name, const std::string &id) {

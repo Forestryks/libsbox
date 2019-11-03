@@ -7,11 +7,10 @@
 
 #include "context_manager.h"
 #include "shared_id_getter.h"
+#include "shared_barrier.h"
 #include "container.h"
 
-#include <map>
-#include <json.hpp>
-#include <bits/types/siginfo_t.h>
+#include <sys/signal.h>
 
 class Worker : public ContextManager {
 public:

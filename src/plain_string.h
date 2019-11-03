@@ -5,12 +5,11 @@
 #ifndef LIBSBOX_PLAIN_STRING_H
 #define LIBSBOX_PLAIN_STRING_H
 
-#include "context_manager.h"
 #include "utils.h"
-#include "plain_vector.h"
 
-#include <sys/types.h>
+#include <stddef.h>
 #include <string>
+#include <stdexcept>
 #include <cstring>
 
 template<size_t MaxSize>

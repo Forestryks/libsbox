@@ -9,8 +9,10 @@
 #include "shared_id_getter.h"
 #include "worker.h"
 
-#include <filesystem>
+#include <string>
 #include <memory>
+#include <vector>
+#include <filesystem>
 
 namespace fs = std::filesystem;
 

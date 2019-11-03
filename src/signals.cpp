@@ -2,14 +2,15 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include "signals.h"
 #include "context_manager.h"
 #include "utils.h"
+#include "signals.h"
 
-#include <sys/signal.h>
-#include <sys/time.h>
 #include <cstring>
+#include <sys/time.h>
+#include <signal.h>
 #include <map>
+#include <functional>
 
 namespace {
 class SignalAction {

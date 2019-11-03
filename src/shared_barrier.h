@@ -7,8 +7,8 @@
 
 #include "shared_memory_object.h"
 
-#include <pthread.h>
 #include <memory>
+#include <pthread.h>
 
 // Multiprocess barrier
 class SharedBarrier {

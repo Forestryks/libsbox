@@ -3,6 +3,10 @@
  */
 
 #include "shared_cond.h"
+#include "context_manager.h"
+#include "utils.h"
+
+#include <unistd.h>
 
 SharedCond::SharedCond() {
     cond_ = std::make_unique<SharedMemoryObject<pthread_cond_t>>();

@@ -5,10 +5,11 @@
 #ifndef LIBSBOX_SHARED_COND_H_
 #define LIBSBOX_SHARED_COND_H_
 
-#include "shared_memory_object.h"
 #include "shared_mutex.h"
+#include "shared_memory_object.h"
 
-#include <unistd.h>
+#include <pthread.h>
+#include <stddef.h>
 #include <memory>
 
 // Multiprocess condition variable

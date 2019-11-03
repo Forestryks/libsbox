@@ -4,18 +4,17 @@
 
 #include "daemon.h"
 #include "config.h"
+#include "utils.h"
 #include "signals.h"
 
-#include <iostream>
-#include <wait.h>
+#include <unistd.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <unistd.h>
+#include <iostream>
 #include <limits.h>
-
-namespace fs = std::filesystem;
 
 Daemon Daemon::daemon_;
 

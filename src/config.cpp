@@ -48,7 +48,7 @@ int Config::get_num_boxes() const {
     return num_boxes_;
 }
 
-const fs::path & Config::get_socket_path() const {
+const fs::path &Config::get_socket_path() const {
     return socket_path_;
 }
 

@@ -14,7 +14,7 @@ public:
     static const Config &get();
 
     [[nodiscard]] int get_num_boxes() const;
-    [[nodiscard]] const fs::path & get_socket_path() const;
+    [[nodiscard]] const fs::path &get_socket_path() const;
     [[nodiscard]] int get_first_uid() const;
     [[nodiscard]] const fs::path &get_box_dir() const;
     [[nodiscard]] const fs::path &get_cgroup_root() const;

@@ -81,7 +81,7 @@ void Daemon::run() {
         die(format("Failed to close() socket: %m"));
     }
 
-    // Kill all workers and after it wait until no workers continue running TODO
+    // Kill all workers and after it wait until no workers continue running
     for (auto &worker : workers_) {
         if (kill(worker->get_pid(), SIGTERM) != 0) {
             die(format("Failed to send SIGTERM to worker: %m"));
@@ -129,9 +129,11 @@ void Daemon::prepare() {
         die(format("Failed to close /run/libsboxd.pid: %m"));
     }
 
-    std::set_terminate([]() {
-        ContextManager::get().die("Uncaught exception");
-    });
+    std::set_terminate(
+        []() {
+            ContextManager::get().die("Uncaught exception");
+        }
+    );
 
     prepare_signals();
 

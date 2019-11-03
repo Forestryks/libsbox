@@ -14,9 +14,6 @@
 #include <string>
 #include <cstring>
 
-// TODO: use unsigned where appropriate
-
-// TODO: errors
 template<size_t MaxItems, size_t MaxTotalSize>
 class PlainStringVector {
 public:

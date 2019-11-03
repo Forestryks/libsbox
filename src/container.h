@@ -14,8 +14,6 @@
 #include <json.hpp>
 #include <sys/resource.h>
 
-// TODO: cleanup cgroups
-
 namespace fs = std::filesystem;
 
 class Container : public ContextManager {
@@ -32,7 +30,7 @@ public:
     SharedBarrier *get_barrier();
 
     [[noreturn]]
-    void die(const std::string &error) override ;
+    void die(const std::string &error) override;
     void terminate() override;
 private:
     int id_;
@@ -43,7 +41,6 @@ private:
     fs::path root_;
     fs::path work_dir_;
 
-    // TODO: constructors and destructors must not create/destroy shared data
     CgroupController *cpuacct_controller_ = nullptr;
     CgroupController *memory_controller_ = nullptr;
     pid_t slave_pid_ = -1;

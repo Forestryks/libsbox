@@ -16,7 +16,7 @@ template<typename T>
 class SharedMemoryObject {
 public:
     template<typename ...Args>
-    explicit SharedMemoryObject(Args&&... args) {
+    explicit SharedMemoryObject(Args &&... args) {
         ptr_ = (T *) allocate_shared_memory(sizeof(T));
         ptr_ = new(ptr_) T(args...);
         if (ptr_ == MAP_FAILED) {
@@ -37,6 +37,7 @@ public:
     T *operator->() {
         return ptr_;
     }
+
 private:
     T *ptr_;
 };

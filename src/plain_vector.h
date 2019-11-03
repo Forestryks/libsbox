@@ -61,8 +61,6 @@ PlainVector<T, MaxSize>::~PlainVector() {
     clear();
 }
 
-// TODO: optimize includes
-
 template<class T, size_t MaxSize>
 typename PlainVector<T, MaxSize>::reference
 PlainVector<T, MaxSize>::at(PlainVector::size_type pos) {

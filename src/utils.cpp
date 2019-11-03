@@ -45,7 +45,7 @@ void write_file(const fs::path &path, const std::string &data) {
     if (fd < 0) {
         ContextManager::get().die(format("Cannot open file '%s' for writing: %m", path.c_str()));
     }
-    if (write(fd, data.c_str(), data.size()) != (int)data.size()) {
+    if (write(fd, data.c_str(), data.size()) != (int) data.size()) {
         ContextManager::get().die(format("Cannot write to file '%s': %m", path.c_str()));
     }
     if (close(fd) != 0) {

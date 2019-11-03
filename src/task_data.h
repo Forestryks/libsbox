@@ -25,7 +25,6 @@ struct BindData {
 
 #include <iostream>
 
-// TODO: normal debug
 #define db(x) std::cerr << #x " = " << x << std::endl
 
 struct TaskData {

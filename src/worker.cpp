@@ -32,8 +32,6 @@ pid_t Worker::start() {
     _exit(1);
 }
 
-// TODO: never use exit(), use _exit()
-
 void Worker::die(const std::string &error) {
     Daemon::get().report_error("[worker] " + error);
     _exit(1);
@@ -66,7 +64,6 @@ void Worker::serve() {
         raise(SIGKILL);
     }
 
-    // TODO: restore default in containers
     // We need check containers' exit codes asynchronously to avoid deadlocks
     struct sigaction action{};
     action.sa_sigaction = sigchld_action_wrapper;
@@ -175,9 +172,6 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
                 containers_.push_back(persistent_containers_[last_persistent_container].get());
                 last_persistent_container++;
             } else {
-                // TODO: put id
-                // TODO: remove temporary
-                // TODO: cleanup containers_
                 created_container = new Container(id_getter_->get(), false);
                 temporary_containers_.emplace_back(created_container);
                 containers_.push_back(created_container);

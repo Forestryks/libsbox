@@ -13,8 +13,6 @@
 #include <string>
 #include <cstring>
 
-// TODO: errors
-
 template<size_t MaxSize>
 class PlainString {
 public:

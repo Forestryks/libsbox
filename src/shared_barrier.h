@@ -10,8 +10,6 @@
 #include <pthread.h>
 #include <memory>
 
-// TODO: ownership and reset?
-
 // Multiprocess barrier
 class SharedBarrier {
 public:

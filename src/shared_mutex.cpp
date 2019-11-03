@@ -31,7 +31,7 @@ SharedMutex::~SharedMutex() {
 }
 
 void SharedMutex::lock() {
-    if(pthread_mutex_lock(mutex_->get()) != 0) {
+    if (pthread_mutex_lock(mutex_->get()) != 0) {
         ContextManager::get().die(format("Failed to lock mutex: %m"));
     }
 }

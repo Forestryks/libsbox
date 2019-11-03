@@ -114,17 +114,39 @@
  * There are two types of errors: evaluation errors and internal. While evaluations errors are reported just by
  * returning json object with only one field "error" (e.g. {"error": "Executable not found"}), second are critical and
  * lead to libsboxd termination.
- *
- * TODO: https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
- * TODO: remove syslog
- * TODO: non-critical request error handling
- * TODO: service stop
  */
 
 #include "daemon.h"
 
 #include <cstdlib>
 #include <cstring>
+
+// TODO(#0@forestryks): optimize includes
+// TODO(#1@forestryks): remove debug output
+// TODO(#2@forestryks): remove #include <iostream>
+// TODO(#3@forestryks): don't close error pipe before exec
+// TODO(#4@forestryks): -2 = dup stdout
+// TODO(#5@forestryks): disable standard rules parameter
+// TODO(#6@forestryks): setters/getters in task_data
+// TODO(#7@forestryks): error pipe capacity?
+// TODO(#8@forestryks): logging
+// TODO(#9@forestryks): optimize memory (delete all unnecessary before entering cgroups)
+// TODO(#10@forestryks): save in Bind
+// TODO(#11@forestryks): check memory usage overhead
+// TODO(#12@forestryks): non-critical request error handling
+// TODO(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
+// TODO(#14@forestryks): cleanup cgroups
+// TODO(#15@forestryks): constructors and destructors must not create/destroy shared data
+// TODO(#16@forestryks): errors in plain structures
+// TODO(#17@forestryks): consider using exceptions
+// TODO(#18@forestryks): use correct data types (e.g. unsigned)
+// TODO(#19@forestryks): update description + add dir setup
+// TODO(#20@forestryks): ownership and reset in shared_barrier (may be fixed automatically after #15)
+// TODO(#21@forestryks): normal debug
+// TODO(#22@forestryks): never use exit(), use _exit()
+// TODO(#23@forestryks): restore default SIGCHLD in containers
+// TODO(#24@forestryks): don't use C-style casts
+
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp(argv[1], "stop") == 0) {

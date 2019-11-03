@@ -18,14 +18,10 @@
 #include <dirent.h>
 #include <grp.h>
 
-// TODO: remove debug output
-// TODO: remove #include <iostream>
-
 Container::Container(int id, bool persistent) : id_(id), persistent_(persistent) {}
 
 void Container::die(const std::string &error) {
     if (slave_pid_ == 0) {
-        // TODO: don't close error pipe before exec
         task_data_->error = true;
         Daemon::get().report_error("[slave] " + error);
     } else {
@@ -86,7 +82,6 @@ void Container::get_task_from_json(const nlohmann::json &json_task) {
         }
     }
 
-    // TODO: -2 = dup stdout
     task_data_->stderr_desc.fd = -1;
     task_data_->stderr_desc.filename = "";
     if (!json_task["stderr"].is_null() && !json_task["stderr"].empty()) {
@@ -118,12 +113,7 @@ void Container::get_task_from_json(const nlohmann::json &json_task) {
         std::string inside = bind["inside"];
         std::string outside = bind["outside"];
         int flags = bind["flags"];
-        // TODO: fix
-        task_data_->binds.push_back({});
-        int id = (int) task_data_->binds.size() - 1;
-        task_data_->binds[id].inside = inside;
-        task_data_->binds[id].outside = outside;
-        task_data_->binds[id].flags = flags;
+        task_data_->binds.emplace_back(inside, outside, flags);
     }
 
     task_data_->time_usage_ms = -1;
@@ -143,24 +133,23 @@ void Container::get_task_from_json(const nlohmann::json &json_task) {
     task_data_->error = false;
 }
 
-// TODO: disable standard rules
-// TODO: setters/getters in task_data
-
 nlohmann::json Container::results_to_json() {
-    return nlohmann::json::object({
-        {"time_usage_ms", task_data_->time_usage_ms},
-        {"time_usage_sys_ms", task_data_->time_usage_sys_ms},
-        {"time_usage_user_ms", task_data_->time_usage_user_ms},
-        {"wall_time_usage_ms", task_data_->wall_time_usage_ms},
-        {"memory_usage_kb", task_data_->memory_usage_kb},
-        {"time_limit_exceeded", task_data_->time_limit_exceeded},
-        {"wall_time_limit_exceeded", task_data_->wall_time_limit_exceeded},
-        {"exited", task_data_->exited},
-        {"exit_code", task_data_->exit_code},
-        {"signaled", task_data_->signaled},
-        {"term_signal", task_data_->term_signal},
-        {"oom_killed", task_data_->oom_killed}
-    });
+    return nlohmann::json::object(
+        {
+            {"time_usage_ms", task_data_->time_usage_ms},
+            {"time_usage_sys_ms", task_data_->time_usage_sys_ms},
+            {"time_usage_user_ms", task_data_->time_usage_user_ms},
+            {"wall_time_usage_ms", task_data_->wall_time_usage_ms},
+            {"memory_usage_kb", task_data_->memory_usage_kb},
+            {"time_limit_exceeded", task_data_->time_limit_exceeded},
+            {"wall_time_limit_exceeded", task_data_->wall_time_limit_exceeded},
+            {"exited", task_data_->exited},
+            {"exit_code", task_data_->exit_code},
+            {"signaled", task_data_->signaled},
+            {"term_signal", task_data_->term_signal},
+            {"oom_killed", task_data_->oom_killed}
+        }
+    );
 }
 
 int Container::clone_callback(void *ptr) {
@@ -188,10 +177,6 @@ pid_t Container::start() {
 
     return pid_;
 }
-
-// TODO: error pipe capacity?
-// TODO: logging
-// TODO: optimize memory (delete all unnecessary before entering cgroups)
 
 void Container::serve() {
     ContextManager::set(this);
@@ -225,7 +210,6 @@ void Container::serve() {
         wait_for_slave();
 
         for (auto &bind : binds) {
-            // TODO: save in Bind
             bind.umount(root_, work_dir_);
         }
 
@@ -425,7 +409,7 @@ void Container::freopen_fds() {
 
     if (!task_data_->stdout_desc.filename.empty()) {
         task_data_->stdout_desc.fd =
-            open(task_data_->stdout_desc.filename.c_str(), O_WRONLY | O_TRUNC); // TODO: remove O_CREAT?
+            open(task_data_->stdout_desc.filename.c_str(), O_WRONLY | O_TRUNC);
         if (task_data_->stdout_desc.fd < 0) {
             die(format("Cannot open '%s': %m", task_data_->stdout_desc.filename.c_str()));
         }
@@ -508,6 +492,7 @@ void Container::set_rlimit_ext(const char *res_name, int res, rlim_t limit) {
 }
 
 #define set_rlimit(res, limit) set_rlimit_ext(#res, res, limit)
+
 void Container::setup_rlimits() {
     if (task_data_->fsize_limit_kb != -1) {
         set_rlimit(RLIMIT_FSIZE, task_data_->fsize_limit_kb);
@@ -519,6 +504,7 @@ void Container::setup_rlimits() {
     set_rlimit(RLIMIT_MEMLOCK, 0);
     set_rlimit(RLIMIT_MSGQUEUE, 0);
 }
+
 #undef set_rlimit
 
 void Container::setup_credentials() {

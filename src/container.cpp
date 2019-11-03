@@ -91,7 +91,7 @@ void Container::get_task_from_json(const nlohmann::json &json_task) {
         if (stderr_filename[0] == '@') {
             std::string pipe_name = stderr_filename.substr(1);
             if (pipe_name == "stdout") {
-                task_data_->stderr_desc.fd = -2;
+                task_data_->stderr_desc.fd = 1;
             } else {
                 const auto &pipe = Worker::get().get_pipe(pipe_name);
                 task_data_->stderr_desc.fd = pipe.second;
@@ -398,7 +398,7 @@ bool Container::is_oom_killed() {
         }
     }
     die("Can't find oom_kill field in memory.oom_control");
-    exit(-1); // we should not get here
+    _exit(-1); // we should not get here
 }
 
 void Container::freopen_fds() {
@@ -417,14 +417,11 @@ void Container::freopen_fds() {
         }
     }
 
-    if (task_data_->stderr_desc.filename[0] != 0) {
+    if (!task_data_->stderr_desc.filename.empty()) {
         task_data_->stderr_desc.fd = open(task_data_->stderr_desc.filename.c_str(), O_WRONLY | O_TRUNC);
         if (task_data_->stderr_desc.fd < 0) {
             die(format("Cannot open '%s': %m", task_data_->stderr_desc.filename.c_str()));
         }
-    }
-    if (task_data_->stderr_desc.fd == -2) {
-        task_data_->stderr_desc.fd = 1;
     }
 }
 
@@ -558,5 +555,5 @@ void Container::slave() {
 
     fexecve(exec_fd_, task_data_->argv.get(), task_data_->env.get());
     die(format("Failed to exec target: %m"));
-    exit(-1); // we should not get here
+    _exit(-1); // we should not get here
 }

@@ -100,7 +100,7 @@ void Daemon::run() {
 
     log("Stopped");
 
-    exit(0);
+    _exit(0);
 }
 
 void Daemon::prepare() {
@@ -119,7 +119,7 @@ void Daemon::prepare() {
         // We don't call die() here, because it will try to cleanup and remove /run/libsboxd.pid even if current process
         // don't own it
         log(format("Cannot create /run/libsboxd.pid: %m"));
-        exit(1);
+        _exit(1);
     }
     if (dprintf(fd, "%d", getpid()) < 0) {
         die(format("Failed to write pid to /run/libsboxd.pid: %m"));

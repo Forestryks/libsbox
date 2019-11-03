@@ -119,7 +119,7 @@ void Worker::serve() {
         }
     }
 
-    exit(0);
+    _exit(0);
 }
 
 std::string Worker::process(const std::string &request) {

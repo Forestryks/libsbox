@@ -117,10 +117,10 @@
  */
 
 // CLOSED(#0@forestryks): optimize includes
-// TODO(#1@forestryks): remove debug output
+// CLOSED(#1@forestryks): remove debug output
 // CLOSED(#2@forestryks): remove #include <iostream>
-// TODO(#3@forestryks): don't close error pipe before exec
-// TODO(#4@forestryks): -2 = dup stdout
+// CLOSED(#3@forestryks): don't close error pipe before exec
+// CLOSED(#4@forestryks): -2 = dup stdout
 // TODO(#5@forestryks): disable standard rules parameter
 // TODO(#6@forestryks): setters/getters in task_data
 // TODO(#7@forestryks): error pipe capacity?
@@ -138,8 +138,8 @@
 // TODO(#19@forestryks): update description + add dir setup
 // TODO(#20@forestryks): ownership and reset in shared_barrier (may be fixed automatically after #15)
 // TODO(#21@forestryks): normal debug
-// TODO(#22@forestryks): never use exit(), use _exit()
-// TODO(#23@forestryks): restore default SIGCHLD in containers
+// CLOSED(#22@forestryks): never use exit(), use _exit()
+// CLOSED(#23@forestryks): restore default SIGCHLD in containers
 // TODO(#24@forestryks): don't use C-style casts
 // TODO(#25@forestryks): add tests
 
@@ -147,16 +147,17 @@
 
 #include <cstring>
 #include <cstdlib>
+#include <unistd.h>
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp(argv[1], "stop") == 0) {
-        exit(system("(cat /run/libsboxd.pid | xargs kill -s SIGTERM); rm /run/libsboxd.pid"));
+        _exit(system("(cat /run/libsboxd.pid | xargs kill -s SIGTERM); rm /run/libsboxd.pid"));
     }
     if (argc == 2 && strcmp(argv[1], "kill") == 0) {
-        exit(system("(cat /run/libsboxd.pid | xargs kill -s SIGKILL); rm /run/libsboxd.pid"));
+        _exit(system("(cat /run/libsboxd.pid | xargs kill -s SIGKILL); rm /run/libsboxd.pid"));
     }
     if (argc == 2 && strcmp(argv[1], "killall") == 0) {
-        exit(system("rm /run/libsboxd.pid; killall libsboxd -s SIGKILL"));
+        _exit(system("rm /run/libsboxd.pid; killall libsboxd -s SIGKILL"));
     }
 
     Daemon::get().run();

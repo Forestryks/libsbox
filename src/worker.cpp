@@ -27,8 +27,6 @@ pid_t Worker::start() {
     }
 
     serve();
-    die(format("We should not get here"));
-    _exit(1);
 }
 
 void Worker::die(const std::string &error) {
@@ -84,7 +82,7 @@ void Worker::serve() {
             die(format("Failed to accept connection: %m"));
         }
 
-        // If worker is terminated we want to complete current response, so we don't want to interrupt anything
+        // If worker is terminated we want to complete current request, so we don't want to interrupt anything
         set_standard_handler_restart(SIGTERM, true);
 
         // Read from socket until end-of-file or null-byte
@@ -115,7 +113,7 @@ void Worker::serve() {
         }
 
         if (close(socket_fd_) != 0) {
-            die(format("Cannot clone socket: %m"));
+            die(format("Cannot close socket: %m"));
         }
     }
 
@@ -150,26 +148,23 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
         die(format("Received json is not an object"));
     }
 
-    assert(pipes_.empty());
-    assert(containers_.empty());
-
     try {
         const nlohmann::json &json_tasks = json_request.at("tasks");
-        int last_persistent_container = 0;
+        int next_persistent_container = 0;
         for (const auto &json_task : json_tasks) {
-            bool persistent_allowed = true;
-            if (json_task.at("ipc").get<bool>()) {
-                persistent_allowed = false;
+            bool persistence_allowed = true;
+            if (json_task.at("ipc").get<bool>() || !json_task.at("standard_rules").get<bool>()) {
+                persistence_allowed = false;
             }
 
             Container *created_container = nullptr;
-            if (persistent_allowed) {
-                if (last_persistent_container == (int) persistent_containers_.size()) {
+            if (persistence_allowed) {
+                if (next_persistent_container == (int) persistent_containers_.size()) {
                     created_container = new Container(id_getter_->get(), true);
                     persistent_containers_.emplace_back(created_container);
                 }
-                containers_.push_back(persistent_containers_[last_persistent_container].get());
-                last_persistent_container++;
+                containers_.push_back(persistent_containers_[next_persistent_container].get());
+                next_persistent_container++;
             } else {
                 created_container = new Container(id_getter_->get(), false);
                 temporary_containers_.emplace_back(created_container);
@@ -182,8 +177,6 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
                 }
             }
         }
-
-        assert(json_tasks.size() == containers_.size());
     } catch (const nlohmann::json::exception &e) {
         die(format("Failed to parse request: %s", e.what()));
     }
@@ -193,7 +186,7 @@ void Worker::write_tasks(const nlohmann::json &json_request) {
     try {
         const nlohmann::json &json_tasks = json_request.at("tasks");
         for (int i = 0; i < (int) json_tasks.size(); ++i) {
-            containers_[i]->get_task_from_json(json_tasks[i]);
+            containers_[i]->parse_task_from_json(json_tasks[i]);
         }
     } catch (const nlohmann::json::exception &e) {
         die(format("Failed to parse request: %s", e.what()));

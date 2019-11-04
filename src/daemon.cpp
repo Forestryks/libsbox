@@ -174,7 +174,7 @@ void Daemon::log(const std::string &error) {
 }
 
 void Daemon::report_error(const std::string &error) {
-    write(error_pipe_[1], error.c_str(), PIPE_BUF);
+    write(error_pipe_[1], error.c_str(), std::min<size_t>(PIPE_BUF, error.size()));
 }
 
 void Daemon::die_with_worker_status(int status) {

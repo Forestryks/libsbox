@@ -121,8 +121,8 @@
 // CLOSED(#2@forestryks): remove #include <iostream>
 // CLOSED(#3@forestryks): don't close error pipe before exec
 // CLOSED(#4@forestryks): -2 = dup stdout
-// TODO(#5@forestryks): disable standard rules parameter
-// TODO(#6@forestryks): setters/getters in task_data
+// CLOSED(#5@forestryks): disable standard rules parameter
+// WONTFIX(#6@forestryks): setters/getters in task_data
 // TODO(#7@forestryks): error pipe capacity?
 // TODO(#8@forestryks): logging
 // TODO(#9@forestryks): optimize memory (delete all unnecessary before entering cgroups)
@@ -142,6 +142,7 @@
 // CLOSED(#23@forestryks): restore default SIGCHLD in containers
 // TODO(#24@forestryks): don't use C-style casts
 // TODO(#25@forestryks): add tests
+// TODO(#26@forestryks): always use ContextManager::get().die()
 
 #include "daemon.h"
 

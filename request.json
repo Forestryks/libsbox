@@ -14,6 +14,7 @@
       "stdout": "@pipe_name",
       "stderr": "@stderr",
       "ipc": false,
+      "standard_rules": true,
       "binds": [
         {
           "inside": "input.txt",

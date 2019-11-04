@@ -16,7 +16,7 @@ public:
 
     // Called on critical error
     [[noreturn]] virtual void die(const std::string &error) = 0;
-    // Called when receiving SIGTERM asynchronously (in signal handler)
+    // Called asynchronously when receiving SIGTERM (in signal handler)
     virtual void terminate() = 0;
 private:
     static ContextManager *context_;

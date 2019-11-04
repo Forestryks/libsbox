@@ -3,9 +3,10 @@
  */
 
 #include "shared_id_getter.h"
-#include "shared_lock.h"
 #include "context_manager.h"
 #include "utils.h"
+
+#include <mutex>
 
 SharedIdGetter::SharedIdGetter(int start, int count) {
     ids_stack_ = std::make_unique<SharedMemoryArray<int>>(count);
@@ -17,7 +18,7 @@ SharedIdGetter::SharedIdGetter(int start, int count) {
 }
 
 int SharedIdGetter::get() {
-    SharedLock lock(mutex_);
+    std::unique_lock lock(mutex_);
     if ((*stack_head_->get()) == -1) {
         ContextManager::get().die(format("Failed to get ID: stack is empty"));
     }
@@ -27,7 +28,7 @@ int SharedIdGetter::get() {
 }
 
 void SharedIdGetter::put(int id) {
-    SharedLock lock(mutex_);
+    std::unique_lock lock(mutex_);
     if ((*stack_head_->get()) + 1 == static_cast<long>(ids_stack_->size())) {
         ContextManager::get().die(format("Failed to put ID (%d): stack is full", id));
     }

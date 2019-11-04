@@ -27,9 +27,9 @@ void Container::die(const std::string &error) {
         task_data_->error = true;
         Daemon::get().report_error("[slave] " + error);
     } else {
-        Daemon::get().report_error("[container] " + error);
         if (cpuacct_controller_ != nullptr) cpuacct_controller_->die();
         if (memory_controller_ != nullptr) memory_controller_->die();
+        Daemon::get().report_error("[container] " + error);
     }
 
     _exit(1);
@@ -51,7 +51,7 @@ SharedBarrier *Container::get_barrier() {
     return &barrier_;
 }
 
-void Container::get_task_from_json(const nlohmann::json &json_task) {
+void Container::parse_task_from_json(const nlohmann::json &json_task) {
     task_data_->time_limit_ms = json_task["time_limit_ms"];
     task_data_->wall_time_limit_ms = json_task["wall_time_limit_ms"];
     task_data_->memory_limit_kb = json_task["memory_limit_kb"];
@@ -59,6 +59,7 @@ void Container::get_task_from_json(const nlohmann::json &json_task) {
     task_data_->max_files = json_task["max_files"];
     task_data_->max_threads = json_task["max_threads"];
     task_data_->ipc = json_task["ipc"];
+    task_data_->standard_rules = json_task["standard_rules"];
 
     task_data_->stdin_desc.fd = -1;
     task_data_->stdin_desc.filename = "";
@@ -164,7 +165,6 @@ pid_t Container::start() {
     char *clone_stack = new char[clone_stack_size];
     // SIGCHLD - send SIGCHLD on exit
     // CLONE_FILES - share file descriptors table
-    // CLONE_PARENT - make daemon parent of container, so if container exits, daemon will be notified
     // CLONE_NEWIPC - create new ipc namespace to prevent any forms of communication
     // CLONE_NEWNET - create new network namespace to block network
     // CLONE_NEWNS - create new mount namespace (used for safety reasons)
@@ -235,6 +235,7 @@ void Container::prepare() {
     if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0) {
         die(format("Cannot set parent death signal: %m"));
     }
+    // TODO: very stupid bug
     // To prevent race condition
     if (getppid() == 0) {
         raise(SIGKILL);
@@ -258,6 +259,8 @@ void Container::prepare_root() {
     if (error) {
         die(format("Cannot create root directory (%s): %m", root_.c_str()));
     }
+
+    // TODO: limit size
     if (mount("none", root_.c_str(), "tmpfs", 0, "mode=755") != 0) {
         die(format("Cannot mount root tmpfs: %m"));
     }
@@ -280,8 +283,10 @@ void Container::prepare_root() {
         die(format("Cannot create '/work' dir: %m"));
     }
 
-    for (auto &it : Bind::get_standard_binds()) {
-        it.mount(root_, work_dir_);
+    if (task_data_->standard_rules) {
+        for (auto &it : Bind::get_standard_binds()) {
+            it.mount(root_, work_dir_);
+        }
     }
 }
 
@@ -533,10 +538,6 @@ void Container::slave() {
 
     if (chdir(work_dir_.c_str()) != 0) {
         die(format("chdir() failed: %m"));
-    }
-
-    if (setresuid(id_, 0, 0) != 0) {
-        die(format("Cannot set ruid to %d: %m", id_));
     }
 
     freopen_fds();

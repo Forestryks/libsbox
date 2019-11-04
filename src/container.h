@@ -23,7 +23,7 @@ public:
     ~Container() = default;
 
     pid_t start();
-    void get_task_from_json(const nlohmann::json &json_task);
+    void parse_task_from_json(const nlohmann::json &json_task);
     nlohmann::json results_to_json();
 
     int get_id();

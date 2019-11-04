@@ -18,7 +18,7 @@ public:
     SharedIdGetter(int start, int count);
     ~SharedIdGetter() = default;
 
-    // Get new unique ID, will fail if not free IDs left
+    // Get new unique ID, will fail if no free IDs left
     int get();
 
     // Put given ID back

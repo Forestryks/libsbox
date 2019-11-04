@@ -10,7 +10,6 @@ add_executable(
     shared_memory.cpp
     shared_mutex.cpp
     shared_cond.cpp
-    shared_lock.cpp
     shared_id_getter.cpp
     shared_barrier.cpp
     config.cpp

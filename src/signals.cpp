@@ -33,12 +33,12 @@ public:
         }
     }
 
+private:
     explicit SignalAction(void (*handler)(int)) {
         memset(&sigaction, 0, sizeof(sigaction));
         sigaction.sa_handler = handler;
     }
 
-private:
     mutable struct sigaction sigaction{};
 };
 
@@ -99,11 +99,6 @@ void set_standard_handler_restart(int signum, bool restart) {
     } catch (std::out_of_range &e) {
         ContextManager::get().die(format("%d is invalid signum", signum));
     }
-}
-
-void set_custom_handler(int signum, void (*handler)(int), bool restart) {
-    SignalAction signal_action(handler);
-    signal_action.apply_to(signum, restart);
 }
 
 void start_timer(long interval) {

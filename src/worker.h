@@ -33,7 +33,7 @@ private:
     int socket_fd_ = -1;
     SharedIdGetter *id_getter_;
     SharedBarrier run_start_barrier_{1};
-    pid_t pid_;
+    pid_t pid_{-1};
 
     volatile bool terminated_ = false;
 
@@ -44,6 +44,7 @@ private:
     std::map<std::string, std::pair<int, int>> pipes_;
     void close_pipes();
 
+    [[noreturn]]
     void serve();
     std::string process(const std::string &request);
     nlohmann::json parse_json(const std::string &request);

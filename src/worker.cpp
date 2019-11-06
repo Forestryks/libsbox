@@ -29,7 +29,7 @@ pid_t Worker::start() {
     serve();
 }
 
-void Worker::die(const std::string &error) {
+void Worker::_die(const std::string &error) {
     Daemon::get().report_error("[worker] " + error);
     _exit(1);
 }
@@ -153,7 +153,7 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
         int next_persistent_container = 0;
         for (const auto &json_task : json_tasks) {
             bool persistence_allowed = true;
-            if (json_task.at("ipc").get<bool>() || !json_task.at("standard_rules").get<bool>()) {
+            if (json_task.at("ipc").get<bool>() || !json_task.at("standard_binds").get<bool>()) {
                 persistence_allowed = false;
             }
 

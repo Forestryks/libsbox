@@ -12,6 +12,7 @@
       "stdout": "output",
       "stderr": null,
       "ipc": false,
+      "standard_binds": true,
       "binds": [
         {
           "inside": ".",

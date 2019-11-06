@@ -22,13 +22,13 @@
 
 Container::Container(int id, bool persistent) : id_(id), persistent_(persistent) {}
 
-void Container::die(const std::string &error) {
+void Container::_die(const std::string &error) {
     if (slave_pid_ == 0) {
         task_data_->error = true;
         Daemon::get().report_error("[slave] " + error);
     } else {
-        if (cpuacct_controller_ != nullptr) cpuacct_controller_->die();
-        if (memory_controller_ != nullptr) memory_controller_->die();
+        if (cpuacct_controller_ != nullptr) cpuacct_controller_->_die();
+        if (memory_controller_ != nullptr) memory_controller_->_die();
         Daemon::get().report_error("[container] " + error);
     }
 
@@ -59,7 +59,7 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
     task_data_->max_files = json_task["max_files"];
     task_data_->max_threads = json_task["max_threads"];
     task_data_->ipc = json_task["ipc"];
-    task_data_->standard_rules = json_task["standard_rules"];
+    task_data_->standard_binds = json_task["standard_binds"];
 
     task_data_->stdin_desc.fd = -1;
     task_data_->stdin_desc.filename = "";
@@ -132,6 +132,7 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
     task_data_->signaled = false;
     task_data_->term_signal = -1;
     task_data_->oom_killed = false;
+    task_data_->memory_limit_hit = false;
 
     task_data_->error = false;
 }
@@ -150,7 +151,8 @@ nlohmann::json Container::results_to_json() {
             {"exit_code", task_data_->exit_code},
             {"signaled", task_data_->signaled},
             {"term_signal", task_data_->term_signal},
-            {"oom_killed", task_data_->oom_killed}
+            {"oom_killed", task_data_->oom_killed},
+            {"memory_limit_hit", task_data_->memory_limit_hit}
         }
     );
 }
@@ -283,7 +285,7 @@ void Container::prepare_root() {
         die(format("Cannot create '/work' dir: %m"));
     }
 
-    if (task_data_->standard_rules) {
+    if (task_data_->standard_binds) {
         for (auto &it : Bind::get_standard_binds()) {
             it.mount(root_, work_dir_);
         }
@@ -343,6 +345,7 @@ void Container::wait_for_slave() {
     task_data_->wall_time_usage_ms = get_wall_clock();
     task_data_->memory_usage_kb = get_memory_usage_kb();
     task_data_->oom_killed = is_oom_killed();
+    task_data_->memory_limit_hit = is_memory_limit_hit();
     if (task_data_->time_limit_ms != -1) {
         task_data_->time_limit_exceeded = (task_data_->time_usage_ms > task_data_->time_limit_ms);
     }
@@ -404,6 +407,11 @@ bool Container::is_oom_killed() {
     }
     die("Can't find oom_kill field in memory.oom_control");
     _exit(-1); // we should not get here
+}
+
+bool Container::is_memory_limit_hit() {
+    std::string data = memory_controller_->read("memory.failcnt");
+    return stoll(data);
 }
 
 void Container::freopen_fds() {

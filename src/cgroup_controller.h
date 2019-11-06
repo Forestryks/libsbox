@@ -15,7 +15,7 @@ public:
     explicit CgroupController(const std::string &name, const std::string &id);
     ~CgroupController();
 
-    void die();
+    void _die();
     void write(const std::string &filename, const std::string &data);
     std::string read(const std::string &filename);
     void enter();

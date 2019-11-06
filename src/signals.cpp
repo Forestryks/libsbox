@@ -26,7 +26,7 @@ public:
             sigaction.sa_flags |= SA_RESTART;
         }
         if (::sigaction(signum, &sigaction, nullptr)) {
-            ContextManager::get().die(format("Cannot set signal action for %s: %m", strsignal(signum)));
+            die(format("Cannot set signal action for %s: %m", strsignal(signum)));
         }
         if (restart) {
             sigaction.sa_flags &= (~SA_RESTART);
@@ -43,7 +43,7 @@ private:
 };
 
 void abort_handler(int signum) {
-    ContextManager::get().die(format("Received fatal signal %d (%s)", signum, strsignal(signum)));
+    die(format("Received fatal signal %d (%s)", signum, strsignal(signum)));
 }
 
 void terminate_handler(int) {
@@ -97,7 +97,7 @@ void set_standard_handler_restart(int signum, bool restart) {
     try {
         signal_actions.at(signum).get().apply_to(signum, restart);
     } catch (std::out_of_range &e) {
-        ContextManager::get().die(format("%d is invalid signum", signum));
+        die(format("%d is invalid signum", signum));
     }
 }
 

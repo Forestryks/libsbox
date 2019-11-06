@@ -14,7 +14,7 @@ CgroupController::CgroupController(const std::string &name, const std::string &i
     std::error_code error;
     fs::create_directories(path_, error);
     if (error) {
-        ContextManager::get().die(format("Cannot create dir '%s': %s", path_.c_str(), error.message().c_str()));
+        die(format("Cannot create dir '%s': %s", path_.c_str(), error.message().c_str()));
     }
 }
 
@@ -22,11 +22,11 @@ CgroupController::~CgroupController() {
     std::error_code error;
     fs::remove(path_, error);
     if (error) {
-        ContextManager::get().die(format("Cannot remove dir '%s': %s", path_.c_str(), error.message().c_str()));
+        die(format("Cannot remove dir '%s': %s", path_.c_str(), error.message().c_str()));
     }
 }
 
-void CgroupController::die() {
+void CgroupController::_die() {
     std::error_code error;
     fs::remove(path_, error);
 }

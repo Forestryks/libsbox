@@ -24,7 +24,7 @@ public:
     static Daemon &get();
 
     [[noreturn]]
-    void die(const std::string &error) override;
+    void _die(const std::string &error) override;
     void terminate() override;
 
     void report_error(const std::string &error);

@@ -31,7 +31,7 @@ public:
     SharedBarrier *get_barrier();
 
     [[noreturn]]
-    void die(const std::string &error) override;
+    void _die(const std::string &error) override;
     void terminate() override;
 private:
     int id_;
@@ -61,6 +61,7 @@ private:
     long get_time_usage_user_ms();
     long get_memory_usage_kb();
     bool is_oom_killed();
+    bool is_memory_limit_hit();
 
     int exec_fd_ = -1;
 

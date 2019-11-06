@@ -23,7 +23,7 @@ SharedBarrier::~SharedBarrier() {
 void SharedBarrier::wait() {
     int err = pthread_barrier_wait(barrier_->get());
     if (err != 0 && err != PTHREAD_BARRIER_SERIAL_THREAD) {
-        ContextManager::get().die(format("Failed to wait() on barrier: %m"));
+        die(format("Failed to wait() on barrier: %m"));
     }
 }
 
@@ -35,21 +35,21 @@ void SharedBarrier::reset(int count) {
 void SharedBarrier::init(int count) {
     pthread_barrierattr_t barrierattr;
     if (pthread_barrierattr_init(&barrierattr) != 0) {
-        ContextManager::get().die(format("Failed to initialize barrierattr: %m"));
+        die(format("Failed to initialize barrierattr: %m"));
     }
     if (pthread_barrierattr_setpshared(&barrierattr, PTHREAD_PROCESS_SHARED) != 0) {
-        ContextManager::get().die(format("Failed to set PTHREAD_PROCESS_SHARED to barrierattr: %m"));
+        die(format("Failed to set PTHREAD_PROCESS_SHARED to barrierattr: %m"));
     }
     if (pthread_barrier_init(barrier_->get(), &barrierattr, count)) {
-        ContextManager::get().die(format("Failed to initialize barrier: %m"));
+        die(format("Failed to initialize barrier: %m"));
     }
     if (pthread_barrierattr_destroy(&barrierattr) != 0) {
-        ContextManager::get().die(format("Failed to destroy barrierattr: %m"));
+        die(format("Failed to destroy barrierattr: %m"));
     }
 }
 
 void SharedBarrier::destroy() {
     if (pthread_barrier_destroy(barrier_->get()) != 0) {
-        ContextManager::get().die(format("Failed to destroy barrier: %m"));
+        die(format("Failed to destroy barrier: %m"));
     }
 }

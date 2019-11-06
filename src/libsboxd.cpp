@@ -141,8 +141,14 @@
 // CLOSED(#22@forestryks): never use exit(), use _exit()
 // CLOSED(#23@forestryks): restore default SIGCHLD in containers
 // TODO(#24@forestryks): don't use C-style casts
-// TODO(#25@forestryks): add tests
-// TODO(#26@forestryks): always use ContextManager::get().die()
+// TODO(#25@forestryks): add tests (esp for pipes)
+// CLOSED(#26@forestryks): always use die()
+// TODO(#27@forestryks): synchronize in slave too
+// CLOSED(#28@forestryks): don't update config on install
+// CLOSED(#29@forestryks): race condition when opening/closing fds (upd: there is no race condition in fact)
+// CLOSED(#30@forestryks): memory controller failcnt
+// TODO(#31@forestryks): re-read memory controller to ensure that limit is set
+// TODO(#32@forestryks): omm_killed and memory_limit_hit multi-threading support
 
 #include "daemon.h"
 

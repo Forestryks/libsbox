@@ -22,7 +22,7 @@ Daemon &Daemon::get() {
     return daemon_;
 }
 
-void Daemon::die(const std::string &error) {
+void Daemon::_die(const std::string &error) {
     log(error);
     unlink(socket_path_.c_str());
     close(server_socket_fd_);
@@ -130,7 +130,7 @@ void Daemon::prepare() {
 
     std::set_terminate(
         []() {
-            ContextManager::get().die("Uncaught exception");
+            die("Uncaught exception");
         }
     );
 
@@ -165,7 +165,7 @@ void Daemon::prepare() {
 
 void Daemon::close_error_pipe_read_end() {
     if (close(error_pipe_[0]) != 0) {
-        ContextManager::get().die("Cannot close read end of error pipe: %m");
+        die("Cannot close read end of error pipe: %m");
     }
 }
 

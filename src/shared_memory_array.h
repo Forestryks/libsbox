@@ -20,13 +20,13 @@ public:
         ptr_ = (T *) allocate_shared_memory(sizeof(T) * size);
         ptr_ = new(ptr_) T[size]();
         if (ptr_ == MAP_FAILED) {
-            ContextManager::get().die(format("Cannot allocate %zu bytes of shared memory: %m", sizeof(T)));
+            die(format("Cannot allocate %zu bytes of shared memory: %m", sizeof(T)));
         }
     }
 
     ~SharedMemoryArray() {
         if (free_shared_memory(ptr_, sizeof(T)) != 0) {
-            ContextManager::get().die(format("Cannot free shared memory at %p: %m", ptr_));
+            die(format("Cannot free shared memory at %p: %m", ptr_));
         }
     }
 

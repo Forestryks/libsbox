@@ -34,7 +34,7 @@ struct TaskData {
     int max_files = 16;
     int max_threads = 1;
     bool ipc = false;
-    bool standard_rules = true;
+    bool standard_binds = true;
 
     IOStream stdin_desc, stdout_desc, stderr_desc;
     PlainStringVector<ARGC_MAX, ARGV_MAX> argv;
@@ -56,6 +56,7 @@ struct TaskData {
     bool signaled = false;
     int term_signal = -1;
     bool oom_killed = false;
+    bool memory_limit_hit = false;
 
     volatile bool error = false;
 };

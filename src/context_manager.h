@@ -15,11 +15,13 @@ public:
     static void set(ContextManager *context);
 
     // Called on critical error
-    [[noreturn]] virtual void die(const std::string &error) = 0;
+    [[noreturn]] virtual void _die(const std::string &error) = 0;
     // Called asynchronously when receiving SIGTERM (in signal handler)
     virtual void terminate() = 0;
 private:
     static ContextManager *context_;
 };
+
+#define die(msg) ContextManager::get()._die(msg)
 
 #endif //LIBSBOX_CONTEXT_MANAGER_H_

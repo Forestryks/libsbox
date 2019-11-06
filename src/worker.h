@@ -20,7 +20,7 @@ public:
     pid_t start();
 
     [[noreturn]]
-    void die(const std::string &error) override;
+    void _die(const std::string &error) override;
     void terminate() override;
 
     [[nodiscard]] pid_t get_pid() const;

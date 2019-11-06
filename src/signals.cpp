@@ -5,10 +5,10 @@
 #include "context_manager.h"
 #include "utils.h"
 #include "signals.h"
+#include "logger.h"
 
 #include <cstring>
 #include <sys/time.h>
-#include <signal.h>
 #include <map>
 #include <functional>
 
@@ -34,7 +34,7 @@ public:
     }
 
 private:
-    explicit SignalAction(void (*handler)(int)) {
+    explicit SignalAction(void (*handler)(int)) noexcept {
         memset(&sigaction, 0, sizeof(sigaction));
         sigaction.sa_handler = handler;
     }
@@ -99,6 +99,25 @@ void set_standard_handler_restart(int signum, bool restart) {
     } catch (std::out_of_range &e) {
         die(format("%d is invalid signum", signum));
     }
+}
+
+void set_sigchld_action(void (*callback)(int, siginfo_t *, void *)) {
+    struct sigaction action{};
+    action.sa_sigaction = callback;
+    action.sa_flags = (SA_SIGINFO | SA_RESTART);
+    if (sigaction(SIGCHLD, &action, nullptr) != 0) {
+        die(format("Failed to set SIGCHLD sigaction: %m"));
+    }
+}
+
+void reset_sigchld() {
+    if (signal(SIGCHLD, SIG_DFL) == SIG_ERR) {
+        die(format("Failed to set SIGCHLD sigaction to SIG_DFL: %m"));
+    }
+}
+
+void enable_timer_interrupts() {
+    signal_actions.at(SIGALRM).get().apply_to(SIGALRM, false);
 }
 
 void start_timer(long interval) {

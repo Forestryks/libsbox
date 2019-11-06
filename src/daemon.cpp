@@ -6,6 +6,7 @@
 #include "config.h"
 #include "utils.h"
 #include "signals.h"
+#include "logger.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -16,10 +17,10 @@
 #include <iostream>
 #include <limits.h>
 
-Daemon Daemon::daemon_;
+Daemon *Daemon::daemon_ = nullptr;
 
 Daemon &Daemon::get() {
-    return daemon_;
+    return *daemon_;
 }
 
 void Daemon::_die(const std::string &error) {
@@ -36,10 +37,9 @@ void Daemon::terminate() {
 }
 
 void Daemon::run() {
-    ContextManager::set(this);
+    daemon_ = this;
+    ContextManager::set(this, "daemon");
     prepare();
-
-    pipe2(error_pipe_, O_CLOEXEC | O_DIRECT | O_NONBLOCK);
 
     // Spawn workers
     num_boxes_ = Config::get().get_num_boxes();
@@ -50,10 +50,6 @@ void Daemon::run() {
             die(format("Failed to spawn worker: %m"));
         }
         workers_.emplace_back(worker);
-    }
-
-    if (close(error_pipe_[1]) != 0) {
-        die(format("Cannot close write end of error pipe: %m"));
     }
 
     log("Started, waiting for connections");
@@ -104,6 +100,8 @@ void Daemon::run() {
 }
 
 void Daemon::prepare() {
+    Logger::init();
+
     // We want libsbox to be run as root
     if (setresuid(0, 0, 0) != 0) {
         die(format("Cannot change to root user: %m"));
@@ -163,38 +161,10 @@ void Daemon::prepare() {
     id_getter_ = std::make_unique<SharedIdGetter>(Config::get().get_first_uid(), 256);
 }
 
-void Daemon::close_error_pipe_read_end() {
-    if (close(error_pipe_[0]) != 0) {
-        die("Cannot close read end of error pipe: %m");
-    }
-}
-
-void Daemon::log(const std::string &error) {
-    std::cerr << "[daemon] " << error << std::endl;
-}
-
-void Daemon::report_error(const std::string &error) {
-    write(error_pipe_[1], error.c_str(), std::min<size_t>(PIPE_BUF, error.size()));
-}
-
 void Daemon::die_with_worker_status(int status) {
-    char buf[PIPE_BUF + 1];
-    int cnt = read(error_pipe_[0], buf, PIPE_BUF);
-    if (cnt < 0 && errno != EAGAIN) {
-        die(format("Cannot read from error pipe: %m"));
-    }
-    if (cnt > 0) {
-        buf[cnt] = 0;
-        die(format("Reported error: %s", buf));
-    }
-
     if (WIFEXITED(status)) {
         die(format("Worker exited with exitcode %d", WEXITSTATUS(status)));
     } else {
         die(format("Worker was killed with signal %d (%s)", WTERMSIG(status), strsignal(WTERMSIG(status))));
     }
-}
-
-int Daemon::get_error_pipe_fd() {
-    return error_pipe_[1];
 }

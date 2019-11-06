@@ -18,6 +18,8 @@ namespace fs = std::filesystem;
 
 class Daemon : public ContextManager {
 public:
+    Daemon() = default;
+
     [[noreturn]]
     void run();
 
@@ -26,25 +28,17 @@ public:
     [[noreturn]]
     void _die(const std::string &error) override;
     void terminate() override;
-
-    void report_error(const std::string &error);
-    void close_error_pipe_read_end();
-    int get_error_pipe_fd();
 private:
-    static Daemon daemon_;
-
-    Daemon() = default;
+    static Daemon *daemon_;
 
     fs::path socket_path_;
     int server_socket_fd_{};
     std::unique_ptr<SharedIdGetter> id_getter_;
     volatile bool terminated_ = false;
     int num_boxes_{};
-    int error_pipe_[2]{};
     std::vector<std::unique_ptr<Worker>> workers_;
 
     void prepare();
-    void log(const std::string &error);
     void die_with_worker_status(int status);
 };
 

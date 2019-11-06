@@ -14,6 +14,7 @@
 #include <json.hpp>
 #include <filesystem>
 #include <sys/resource.h>
+#include <signal.h>
 
 namespace fs = std::filesystem;
 
@@ -21,6 +22,8 @@ class Container : public ContextManager {
 public:
     Container(int id, bool persistent);
     ~Container() = default;
+
+    static Container &get();
 
     pid_t start();
     void parse_task_from_json(const nlohmann::json &json_task);
@@ -34,6 +37,8 @@ public:
     void _die(const std::string &error) override;
     void terminate() override;
 private:
+    static Container *container_;
+
     int id_;
     pid_t pid_{};
     bool persistent_;
@@ -73,6 +78,9 @@ private:
     void setup_rlimits();
     void set_rlimit_ext(const char *res_name, int res, rlim_t limit);
     void setup_credentials();
+
+    static void sigchld_action_wrapper(int, siginfo_t *siginfo, void *);
+    void sigchld_action(siginfo_t *siginfo);
 };
 
 #endif //LIBSBOX_CONTAINER_H

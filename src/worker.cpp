@@ -5,6 +5,7 @@
 #include "worker.h"
 #include "daemon.h"
 #include "signals.h"
+#include "logger.h"
 
 #include <unistd.h>
 #include <sys/prctl.h>
@@ -30,7 +31,7 @@ pid_t Worker::start() {
 }
 
 void Worker::_die(const std::string &error) {
-    Daemon::get().report_error("[worker] " + error);
+    log(error);
     _exit(1);
 }
 
@@ -42,15 +43,14 @@ pid_t Worker::get_pid() const {
     return pid_;
 }
 
-void sigchld_action_wrapper(int, siginfo_t *siginfo, void *) {
-    Worker::get().sigchld_action(siginfo);
-}
-
 void Worker::serve() {
     worker_ = this;
-    ContextManager::set(this);
+    ContextManager::set(this, "worker");
 
-    Daemon::get().close_error_pipe_read_end();
+    // Move from foreground group when libsboxd started from terminal
+    if (setpgrp() != 0) {
+        die("setpgrp() failed");
+    }
 
     // Worker will die if parent exits
     if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0) {
@@ -62,12 +62,7 @@ void Worker::serve() {
     }
 
     // We need check containers' exit codes asynchronously to avoid deadlocks
-    struct sigaction action{};
-    action.sa_sigaction = sigchld_action_wrapper;
-    action.sa_flags = (SA_SIGINFO | SA_RESTART);
-    if (sigaction(SIGCHLD, &action, nullptr) != 0) {
-        die(format("Failed to set sigaction to SIGCHLD: %m"));
-    }
+    set_sigchld_action(sigchld_action);
 
     while (!terminated_) {
         // If worker is terminated we want accept() to be interrupted
@@ -124,8 +119,8 @@ std::string Worker::process(const std::string &request) {
     nlohmann::json json_request = parse_json(request);
 
     prepare_containers(json_request);
-    // To start execution we must wait for worker + (all containers)
-    run_start_barrier_.reset((int) containers_.size() + 1);
+    // To start execution we must wait for worker + all containers + all slaves
+    run_start_barrier_.reset((int) containers_.size() * 2 + 1);
     write_tasks(json_request);
     run_tasks();
     close_pipes();
@@ -233,7 +228,7 @@ std::string Worker::collect_results() {
     return result;
 }
 
-void Worker::sigchld_action(siginfo_t *siginfo) {
+void Worker::sigchld_action(int, siginfo_t *siginfo, void *) {
     if (siginfo->si_code != CLD_EXITED || siginfo->si_status != 0) {
         if (siginfo->si_code == CLD_EXITED) {
             die(format("Container exited with exit code %d", siginfo->si_status));

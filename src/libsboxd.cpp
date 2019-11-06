@@ -123,8 +123,8 @@
 // CLOSED(#4@forestryks): -2 = dup stdout
 // CLOSED(#5@forestryks): disable standard rules parameter
 // WONTFIX(#6@forestryks): setters/getters in task_data
-// TODO(#7@forestryks): error pipe capacity?
-// TODO(#8@forestryks): logging
+// WONTFIX(#7@forestryks): error pipe capacity?
+// CLOSED(#8@forestryks): logging
 // TODO(#9@forestryks): optimize memory (delete all unnecessary before entering cgroups)
 // TODO(#10@forestryks): save in Bind
 // TODO(#11@forestryks): check memory usage overhead
@@ -137,24 +137,27 @@
 // TODO(#18@forestryks): use correct data types (e.g. unsigned)
 // TODO(#19@forestryks): update description + add dir setup
 // TODO(#20@forestryks): ownership and reset in shared_barrier (may be fixed automatically after #15)
-// TODO(#21@forestryks): normal debug
+// WONTFIX(#21@forestryks): normal debug
 // CLOSED(#22@forestryks): never use exit(), use _exit()
 // CLOSED(#23@forestryks): restore default SIGCHLD in containers
 // TODO(#24@forestryks): don't use C-style casts
 // TODO(#25@forestryks): add tests (esp for pipes)
 // CLOSED(#26@forestryks): always use die()
-// TODO(#27@forestryks): synchronize in slave too
+// CLOSED(#27@forestryks): synchronize in slave too
 // CLOSED(#28@forestryks): don't update config on install
 // CLOSED(#29@forestryks): race condition when opening/closing fds (upd: there is no race condition in fact)
 // CLOSED(#30@forestryks): memory controller failcnt
 // TODO(#31@forestryks): re-read memory controller to ensure that limit is set
 // TODO(#32@forestryks): omm_killed and memory_limit_hit multi-threading support
+// TODO(#33@forestryks): use STD*_FILENO
+// TODO(#34@forestryks): write logs?
 
 #include "daemon.h"
 
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include <memory>
 
 int main(int argc, char *argv[]) {
     if (argc == 2 && strcmp(argv[1], "stop") == 0) {
@@ -167,5 +170,5 @@ int main(int argc, char *argv[]) {
         _exit(system("rm /run/libsboxd.pid; killall libsboxd -s SIGKILL"));
     }
 
-    Daemon::get().run();
+    std::make_unique<Daemon>()->run();
 }

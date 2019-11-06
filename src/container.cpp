@@ -9,6 +9,7 @@
 #include "config.h"
 #include "utils.h"
 #include "signals.h"
+#include "logger.h"
 
 #include <unistd.h>
 #include <signal.h>
@@ -20,17 +21,18 @@
 #include <grp.h>
 #include <dirent.h>
 
+Container *Container::container_ = nullptr;
+
 Container::Container(int id, bool persistent) : id_(id), persistent_(persistent) {}
 
 void Container::_die(const std::string &error) {
     if (slave_pid_ == 0) {
         task_data_->error = true;
-        Daemon::get().report_error("[slave] " + error);
     } else {
         if (cpuacct_controller_ != nullptr) cpuacct_controller_->_die();
         if (memory_controller_ != nullptr) memory_controller_->_die();
-        Daemon::get().report_error("[container] " + error);
     }
+    log(error);
 
     _exit(1);
 }
@@ -134,7 +136,7 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
     task_data_->oom_killed = false;
     task_data_->memory_limit_hit = false;
 
-    task_data_->error = false;
+    task_data_->error = true;
 }
 
 nlohmann::json Container::results_to_json() {
@@ -183,7 +185,8 @@ pid_t Container::start() {
 }
 
 void Container::serve() {
-    ContextManager::set(this);
+    ContextManager::set(this, "container");
+    container_ = this;
     prepare();
 
     while (true) {
@@ -244,6 +247,8 @@ void Container::prepare() {
     }
 
     reset_signals();
+    enable_timer_interrupts();
+    set_sigchld_action(sigchld_action_wrapper);
 
     prepare_root();
     if (persistent_) {
@@ -361,6 +366,16 @@ void Container::wait_for_slave() {
 void Container::kill_all() {
     if (kill(-1, SIGKILL) != 0) {
         die(format("Failed to kill all processes in box: %m"));
+    }
+    while (true) {
+        int status;
+        pid_t pid = wait(&status);
+        if (pid < 0) {
+            if (errno == ECHILD) {
+                break;
+            }
+            die(format("kill_all() wait() failed: %m"));
+        }
     }
 }
 
@@ -484,7 +499,7 @@ void Container::close_all_fds() {
         long fd = strtol(dentry->d_name, &end, 10);
         if (*end) continue;
 
-        if ((fd >= 0 && fd <= 2) || fd == dir_fd || fd == exec_fd_ || fd == Daemon::get().get_error_pipe_fd())
+        if ((fd >= 0 && fd <= 2) || fd == dir_fd || fd == exec_fd_ || fd == Logger::get().get_fd())
             continue;
         if (close((int) fd) != 0) {
             die(format("Cannot close fd %ld: %m", fd));
@@ -534,7 +549,11 @@ void Container::setup_credentials() {
     }
 }
 
+#include <iostream>
+
 void Container::slave() {
+    ContextManager::set(this, "slave");
+    reset_sigchld();
     fs::path executable = task_data_->argv[0];
     if (!executable.is_absolute()) {
         die(format("%s is not absolute path", executable.c_str()));
@@ -552,6 +571,9 @@ void Container::slave() {
     dup2_fds();
     close_all_fds();
 
+    Worker::get().get_run_start_barrier()->wait();
+    task_data_->error = false;
+
     memory_controller_->enter();
     cpuacct_controller_->enter();
     setup_rlimits();
@@ -565,4 +587,23 @@ void Container::slave() {
     fexecve(exec_fd_, task_data_->argv.get(), task_data_->env.get());
     die(format("Failed to exec target: %m"));
     _exit(-1); // we should not get here
+}
+
+void Container::sigchld_action_wrapper(int, siginfo_t *siginfo, void *) {
+    container_->sigchld_action(siginfo);
+}
+
+Container &Container::get() {
+    return *container_;
+}
+
+void Container::sigchld_action(siginfo_t *siginfo) {
+    if (!task_data_->error) return;
+    if (siginfo->si_code != CLD_EXITED || siginfo->si_status != 0) {
+        if (siginfo->si_code == CLD_EXITED) {
+            die(format("Slave exited with exit code %d", siginfo->si_status));
+        } else {
+            die(format("Slave received signal %d (%s)", siginfo->si_status, strsignal(siginfo->si_status)));
+        }
+    }
 }

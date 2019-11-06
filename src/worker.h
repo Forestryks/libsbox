@@ -53,9 +53,7 @@ private:
     void run_tasks();
     std::string collect_results();
 
-    void sigchld_action(siginfo_t *siginfo);
-
-    friend void sigchld_action_wrapper(int, siginfo_t *siginfo, void *);
+    static void sigchld_action(int, siginfo_t *siginfo, void *);
 };
 
 #endif //LIBSBOX_WORKER_H

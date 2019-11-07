@@ -9,6 +9,8 @@
 #include "plain_vector.h"
 #include "plain_string_vector.h"
 #include "limits.h"
+#include "context_manager.h"
+#include "utils.h"
 
 #include <limits.h>
 
@@ -18,11 +20,20 @@ struct IOStream {
 };
 
 struct BindData {
-    BindData(const std::string &inside, const std::string &outside, int flags)
-        : inside(inside), outside(outside), flags(flags) {};
-    PlainString<PATH_MAX> inside;
-    PlainString<PATH_MAX> outside;
-    int flags{};
+    BindData(const std::string &inside, const std::string &outside, int flags) {
+        if (inside.size() > inside_.max_size()) {
+            die(format("bind inside path is larger that maximum (%zi > %zi)", inside.size(), inside_.max_size()));
+        }
+        if (outside.size() > outside_.max_size()) {
+            die(format("bind outsize path is larger that maximum (%zi > %zi)", outside.size(), outside_.max_size()));
+        }
+        inside_ = inside;
+        outside_ = outside;
+        flags_ = flags;
+    };
+    PlainString<PATH_MAX> inside_;
+    PlainString<PATH_MAX> outside_;
+    int flags_;
 };
 
 struct TaskData {

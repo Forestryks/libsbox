@@ -122,18 +122,18 @@
 // CLOSED(#3@forestryks): don't close error pipe before exec
 // CLOSED(#4@forestryks): -2 = dup stdout
 // CLOSED(#5@forestryks): disable standard rules parameter
-// WONTFIX(#6@forestryks): setters/getters in task_data
+// TODO:re(#6@forestryks): setters/getters in task_data
 // WONTFIX(#7@forestryks): error pipe capacity?
 // CLOSED(#8@forestryks): logging
 // WONTFIX?(#9@forestryks): optimize memory (delete all unnecessary before entering cgroups)
 // CLOSED(#10@forestryks): save in Bind
-// TODO(#11@forestryks): check memory usage overhead
-// TODO(#12@forestryks): non-critical request error handling
-// TODO(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
+// CLOSED(#11@forestryks): check memory usage overhead
+// WONTFIX?(#12@forestryks): non-critical request error handling
+// DONE(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
 // CLOSED(#14@forestryks): cleanup cgroups
 // TODO(#15@forestryks): constructors and destructors must not create/destroy shared data
-// TODO(#16@forestryks): errors in plain structures
-// TODO(#17@forestryks): consider using exceptions
+// CLOSED(#16@forestryks): errors in plain structures
+// CLOSED(#17@forestryks): consider using exceptions
 // TODO(#18@forestryks): use correct data types (e.g. unsigned)
 // TODO(#19@forestryks): update description + add dir setup
 // TODO(#20@forestryks): ownership and reset in shared_barrier (may be fixed automatically after #15)

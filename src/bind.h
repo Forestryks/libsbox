@@ -28,7 +28,7 @@ public:
     void mount(const fs::path &root_dir, const fs::path &work_dir);
     void umount_if_mounted();
 
-    static void apply_standard_rules(const fs::path &root_dir, const fs::path &work_dir);
+static void apply_standard_rules(const fs::path &root_dir, const fs::path &work_dir);
 private:
     fs::path inside_;
     fs::path outside_;

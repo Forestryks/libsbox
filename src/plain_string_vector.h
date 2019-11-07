@@ -22,7 +22,7 @@ public:
         return items_.data();
     }
 
-    size_t size() {
+    size_t count() {
         return items_.size() - 1;
     }
 
@@ -44,6 +44,13 @@ public:
         data_.clear();
     }
 
+    size_t max_size() {
+        return MaxTotalSize;
+    }
+
+    size_t max_count() {
+        return MaxItems;
+    }
 private:
     PlainVector<char *, MaxItems + 1> items_;
     PlainString<MaxTotalSize + MaxItems> data_;

@@ -72,6 +72,7 @@ int main(int argc, char *argv[]) {
         msg += '\n';
     }
     for (int i = 0; i < cnt; ++i) {
+        std::cout << i + 1 << std::endl;
         run();
     }
 }

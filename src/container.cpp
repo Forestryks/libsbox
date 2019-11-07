@@ -70,6 +70,12 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
             const auto &pipe = Worker::get().get_pipe(stdin_filename.substr(1));
             task_data_->stdin_desc.fd = pipe.first;
         } else {
+            if (stdin_filename.size() > task_data_->stdin_desc.filename.max_size()) {
+                die(format(
+                    "stdin filename is larger than maximum (%zi > %zi)",
+                    stdin_filename.size(),
+                    task_data_->stdin_desc.filename.max_size()));
+            }
             task_data_->stdin_desc.filename = stdin_filename;
         }
     }
@@ -82,6 +88,12 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
             const auto &pipe = Worker::get().get_pipe(stdout_filename.substr(1));
             task_data_->stdout_desc.fd = pipe.second;
         } else {
+            if (stdout_filename.size() > task_data_->stdout_desc.filename.max_size()) {
+                die(format(
+                    "stdout filename is larger than maximum (%zi > %zi)",
+                    stdout_filename.size(),
+                    task_data_->stdout_desc.filename.max_size()));
+            }
             task_data_->stdout_desc.filename = stdout_filename;
         }
     }
@@ -99,19 +111,39 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
                 task_data_->stderr_desc.fd = pipe.second;
             }
         } else {
+            if (stderr_filename.size() > task_data_->stderr_desc.filename.max_size()) {
+                die(format(
+                    "stderr filename is larger than maximum (%zi > %zi)",
+                    stderr_filename.size(),
+                    task_data_->stderr_desc.filename.max_size()));
+            }
             task_data_->stderr_desc.filename = stderr_filename;
         }
     }
 
-    int argv_size = json_task.at("argv").size();
+    size_t argv_size = json_task.at("argv").size();
+    if (argv_size > task_data_->argv.max_count()) {
+        die(format("argv size is larger than maximum (%zi > %zi)", argv_size, task_data_->argv.max_count()));
+    }
+    size_t total_size = 0;
+    for (size_t i = 0; i < argv_size; ++i) {
+        total_size += json_task.at("argv").at(i).size();
+    }
+    if (total_size > task_data_->argv.max_size()) {
+        die(format("argv total size is larger than maximum (%zi > %zi)", total_size, task_data_->argv.max_size()));
+    }
     task_data_->argv.clear();
-    for (int i = 0; i < argv_size; ++i) {
-        task_data_->argv.add(json_task.at("argv").at(i));
+    for (const auto &arg : json_task.at("argv")) {
+        task_data_->argv.add(arg);
     }
 
     // ENV to do?
     task_data_->env.clear();
 
+    size_t binds_count = json_task.at("binds").size();
+    if (binds_count > task_data_->binds.max_size()) {
+        die(format("binds count is larger that maximum (%zi > %zi)", binds_count, task_data_->binds.max_size()));
+    }
     task_data_->binds.clear();
     for (const auto &bind : json_task.at("binds")) {
         std::string inside = bind["inside"];

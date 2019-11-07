@@ -12,7 +12,7 @@ Bind::Bind(fs::path inside, fs::path outside, int flags)
     : inside_(std::move(inside)), outside_(std::move(outside)), flags_(flags) {}
 
 Bind::Bind(const BindData *bind_data)
-    : inside_(bind_data->inside.c_str()), outside_(bind_data->outside.c_str()), flags_(bind_data->flags) {}
+    : inside_(bind_data->inside_.c_str()), outside_(bind_data->outside_.c_str()), flags_(bind_data->flags_) {}
 
 std::vector<Bind> Bind::standard_binds = {
     {"/lib", "/lib", 0},

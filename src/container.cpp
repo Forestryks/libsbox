@@ -3,7 +3,6 @@
  */
 
 #include "container.h"
-#include "daemon.h"
 #include "worker.h"
 #include "bind.h"
 #include "config.h"
@@ -330,6 +329,8 @@ void Container::wait_for_slave() {
             continue;
         }
 
+        kill_all();
+
         if (WIFEXITED(status)) {
             task_data_->exited = true;
             task_data_->exit_code = WEXITSTATUS(status);
@@ -364,7 +365,7 @@ void Container::wait_for_slave() {
 }
 
 void Container::kill_all() {
-    if (kill(-1, SIGKILL) != 0) {
+    if (kill(-1, SIGKILL) != 0 && errno != ESRCH) {
         die(format("Failed to kill all processes in box: %m"));
     }
     while (true) {

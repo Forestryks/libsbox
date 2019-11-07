@@ -18,7 +18,8 @@ add_executable(
     worker.cpp
     container.cpp
     cgroup_controller.cpp
-    bind.cpp logger.cpp logger.h)
+    bind.cpp
+    logger.cpp)
 
 target_link_libraries(libsboxd pthread)
 

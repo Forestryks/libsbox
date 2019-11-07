@@ -130,7 +130,7 @@
 // TODO(#11@forestryks): check memory usage overhead
 // TODO(#12@forestryks): non-critical request error handling
 // TODO(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
-// TODO(#14@forestryks): cleanup cgroups
+// CLOSED(#14@forestryks): cleanup cgroups
 // TODO(#15@forestryks): constructors and destructors must not create/destroy shared data
 // TODO(#16@forestryks): errors in plain structures
 // TODO(#17@forestryks): consider using exceptions
@@ -151,6 +151,7 @@
 // TODO(#32@forestryks): omm_killed and memory_limit_hit multi-threading support
 // TODO(#33@forestryks): use STD*_FILENO
 // TODO(#34@forestryks): write logs?
+// CLOSED(#35@forestryks): kill_all() after first child exited
 
 #include "daemon.h"
 

@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 CgroupController::CgroupController(const std::string &name, const std::string &id) {
-    path_ = Config::get().get_cgroup_root() / name / ("libsbox-" + id);
+    path_ = Config::get().get_cgroup_root() / name / "libsbox" / id;
     std::error_code error;
     fs::create_directories(path_, error);
     if (error) {
@@ -41,4 +41,17 @@ std::string CgroupController::read(const std::string &filename) {
 
 void CgroupController::enter() {
     write("tasks", std::to_string(getpid()));
+}
+
+void CgroupController::init(const std::string &name) {
+    fs::path path = Config::get().get_cgroup_root() / name / "libsbox";
+    std::error_code error;
+    fs::remove(path, error);
+    if (error) {
+        die(format("Cannot remove dir '%s': %s", path.c_str(), error.message().c_str()));
+    }
+    fs::create_directories(path, error);
+    if (error) {
+        die(format("Cannot create dir '%s': %s", path.c_str(), error.message().c_str()));
+    }
 }

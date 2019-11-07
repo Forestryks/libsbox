@@ -126,6 +126,9 @@ void Daemon::prepare() {
         die(format("Failed to close /run/libsboxd.pid: %m"));
     }
 
+    CgroupController::init("memory");
+    CgroupController::init("cpuacct");
+
     std::set_terminate(
         []() {
             die("Uncaught exception");

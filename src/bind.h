@@ -26,19 +26,19 @@ public:
     explicit Bind(const BindData *bind_data);
 
     void mount(const fs::path &root_dir, const fs::path &work_dir);
-    void umount(const fs::path &root_dir, const fs::path &work_dir);
+    void umount_if_mounted();
 
-    [[nodiscard]] const fs::path &get_inside() const;
-    [[nodiscard]] const fs::path &get_outside() const;
-    [[nodiscard]] int get_flags() const;
-    static std::vector<Bind> &get_standard_binds();
+    static void apply_standard_rules(const fs::path &root_dir, const fs::path &work_dir);
 private:
     fs::path inside_;
     fs::path outside_;
     int flags_;
     bool mounted_ = false;
 
-    std::pair<fs::path, fs::path> get_paths(const fs::path &root_dir, const fs::path &work_dir);
+    fs::path from_;
+    fs::path to_;
+
+    void set_paths(const fs::path &root_dir, const fs::path &work_dir);
 
     static std::vector<Bind> standard_binds;
 };

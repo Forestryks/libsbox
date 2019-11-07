@@ -125,8 +125,8 @@
 // WONTFIX(#6@forestryks): setters/getters in task_data
 // WONTFIX(#7@forestryks): error pipe capacity?
 // CLOSED(#8@forestryks): logging
-// TODO(#9@forestryks): optimize memory (delete all unnecessary before entering cgroups)
-// TODO(#10@forestryks): save in Bind
+// WONTFIX?(#9@forestryks): optimize memory (delete all unnecessary before entering cgroups)
+// CLOSED(#10@forestryks): save in Bind
 // TODO(#11@forestryks): check memory usage overhead
 // TODO(#12@forestryks): non-critical request error handling
 // TODO(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons

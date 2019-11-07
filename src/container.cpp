@@ -216,7 +216,7 @@ void Container::serve() {
         wait_for_slave();
 
         for (auto &bind : binds) {
-            bind.umount(root_, work_dir_);
+            bind.umount_if_mounted();
         }
 
         delete cpuacct_controller_;
@@ -290,9 +290,7 @@ void Container::prepare_root() {
     }
 
     if (task_data_->standard_binds) {
-        for (auto &it : Bind::get_standard_binds()) {
-            it.mount(root_, work_dir_);
-        }
+        Bind::apply_standard_rules(root_, work_dir_);
     }
 }
 

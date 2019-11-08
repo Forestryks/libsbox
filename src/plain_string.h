@@ -265,7 +265,7 @@ void PlainString<MaxSize>::append(const_pointer str, size_type len) {
 template<size_t MaxSize>
 bool PlainString<MaxSize>::equals(const_pointer str, size_type len) {
     if (size_ != len) return false;
-    for (int i = 0; i < size_; ++i) {
+    for (size_t i = 0; i < size_; ++i) {
         if (str[i] != data_[i]) {
             return false;
         }

@@ -22,7 +22,7 @@ Logger &Logger::get() {
     return *logger_;
 }
 
-int Logger::get_fd() const {
+fd_t Logger::get_fd() const {
     return fd_;
 }
 

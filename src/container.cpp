@@ -22,7 +22,7 @@
 
 Container *Container::container_ = nullptr;
 
-Container::Container(int id, bool persistent) : id_(id), persistent_(persistent) {}
+Container::Container(uid_t id, bool persistent) : id_(id), persistent_(persistent) {}
 
 void Container::_die(const std::string &error) {
     if (slave_pid_ == 0) {
@@ -40,7 +40,7 @@ void Container::terminate() {
     die("Container should never be terminated");
 }
 
-int Container::get_id() {
+uid_t Container::get_id() {
     return id_;
 }
 
@@ -105,7 +105,7 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
         if (stderr_filename[0] == '@') {
             std::string pipe_name = stderr_filename.substr(1);
             if (pipe_name == "stdout") {
-                task_data_->stderr_desc.fd = 1;
+                task_data_->stderr_desc.fd = STDOUT_FILENO;
             } else {
                 const auto &pipe = Worker::get().get_pipe(pipe_name);
                 task_data_->stderr_desc.fd = pipe.second;
@@ -191,12 +191,12 @@ nlohmann::json Container::results_to_json() {
 }
 
 int Container::clone_callback(void *ptr) {
-    ((Container *) ptr)->serve();
+    static_cast<Container *>(ptr)->serve();
     return 0;
 }
 
 pid_t Container::start() {
-    const int clone_stack_size = 8 * 1024 * 1024;
+    const size_t clone_stack_size = 8 * 1024 * 1024;
     char *clone_stack = new char[clone_stack_size];
     // SIGCHLD - send SIGCHLD on exit
     // CLONE_FILES - share file descriptors table
@@ -351,7 +351,7 @@ void Container::wait_for_slave() {
                 break;
             }
 
-            if (task_data_->wall_time_usage_ms != -1 && get_wall_clock() > task_data_->wall_time_limit_ms) {
+            if (task_data_->wall_time_usage_ms != -1 && get_wall_clock_ms() > task_data_->wall_time_limit_ms) {
                 kill_all();
                 break;
             }
@@ -378,7 +378,7 @@ void Container::wait_for_slave() {
     task_data_->time_usage_ms = get_time_usage_ms();
     task_data_->time_usage_sys_ms = get_time_usage_sys_ms();
     task_data_->time_usage_user_ms = get_time_usage_user_ms();
-    task_data_->wall_time_usage_ms = get_wall_clock();
+    task_data_->wall_time_usage_ms = get_wall_clock_ms();
     task_data_->memory_usage_kb = get_memory_usage_kb();
     task_data_->oom_killed = is_oom_killed();
     task_data_->memory_limit_hit = is_memory_limit_hit();
@@ -414,32 +414,32 @@ void Container::reset_wall_clock() {
     gettimeofday(&run_start_, nullptr);
 }
 
-long Container::get_wall_clock() {
+time_ms_t Container::get_wall_clock_ms() {
     struct timeval now = {}, seg = {};
     gettimeofday(&now, nullptr);
     timersub(&now, &run_start_, &seg);
     return seg.tv_sec * 1000 + seg.tv_usec / 1000;
 }
 
-long Container::get_time_usage_ms() {
+time_ms_t Container::get_time_usage_ms() {
     std::string data = cpuacct_controller_->read("cpuacct.usage");
     return stoll(data) / 1000000;
 }
 
-long Container::get_time_usage_sys_ms() {
+time_ms_t Container::get_time_usage_sys_ms() {
     std::string data = cpuacct_controller_->read("cpuacct.usage_sys");
     return stoll(data) / 1000000;
 }
 
-long Container::get_time_usage_user_ms() {
+time_ms_t Container::get_time_usage_user_ms() {
     std::string data = cpuacct_controller_->read("cpuacct.usage_user");
     return stoll(data) / 1000000;
 }
 
-long Container::get_memory_usage_kb() {
+memory_kb_t Container::get_memory_usage_kb() {
     long long max_usage = stoll(memory_controller_->read("memory.max_usage_in_bytes"));
     long long cur_usage = stoll(memory_controller_->read("memory.usage_in_bytes"));
-    return std::max(max_usage, cur_usage) / 1024;
+    return static_cast<memory_kb_t>(std::max(max_usage, cur_usage) / 1024);
 }
 
 bool Container::is_oom_killed() {
@@ -485,30 +485,30 @@ void Container::freopen_fds() {
 }
 
 void Container::dup2_fds() {
-    if (close(0) != 0) {
+    if (close(STDIN_FILENO) != 0) {
         die(format("Cannot close stdin: %m"));
     }
-    if (close(1) != 0) {
+    if (close(STDOUT_FILENO) != 0) {
         die(format("Cannot close stdout: %m"));
     }
-    if (close(2) != 0) {
+    if (close(STDERR_FILENO) != 0) {
         die(format("Cannot close stderr: %m"));
     }
 
     if (task_data_->stdin_desc.fd != -1) {
-        if (dup2(task_data_->stdin_desc.fd, 0) != 0) {
+        if (dup2(task_data_->stdin_desc.fd, STDIN_FILENO) != STDIN_FILENO) {
             die(format("Cannot dup2 stdin: %m"));
         }
     }
 
     if (task_data_->stdout_desc.fd != -1) {
-        if (dup2(task_data_->stdout_desc.fd, 1) != 1) {
+        if (dup2(task_data_->stdout_desc.fd, STDOUT_FILENO) != STDOUT_FILENO) {
             die(format("Cannot dup2 stdout: %m"));
         }
     }
 
     if (task_data_->stderr_desc.fd != -1) {
-        if (dup2(task_data_->stderr_desc.fd, 2) != 2) {
+        if (dup2(task_data_->stderr_desc.fd, STDERR_FILENO) != STDERR_FILENO) {
             die(format("Cannot dup2 stderr: %m"));
         }
     }
@@ -519,7 +519,7 @@ void Container::close_all_fds() {
     if (dir == nullptr) {
         die(format("Cannot open /proc/self/fd: %m"));
     }
-    int dir_fd = dirfd(dir);
+    fd_t dir_fd = dirfd(dir);
     if (dir_fd < 0) {
         die(format("Cannot get fd from DIR*: %m"));
     }
@@ -527,13 +527,14 @@ void Container::close_all_fds() {
     struct dirent *dentry;
     while ((dentry = readdir(dir))) {
         char *end;
-        long fd = strtol(dentry->d_name, &end, 10);
+        fd_t fd = strtol(dentry->d_name, &end, 10);
         if (*end) continue;
 
-        if ((fd >= 0 && fd <= 2) || fd == dir_fd || fd == exec_fd_ || fd == Logger::get().get_fd())
+        if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO || fd == dir_fd || fd == exec_fd_
+            || fd == Logger::get().get_fd())
             continue;
-        if (close((int) fd) != 0) {
-            die(format("Cannot close fd %ld: %m", fd));
+        if (close(fd) != 0) {
+            die(format("Cannot close fd %d: %m", fd));
         }
     }
 
@@ -553,12 +554,12 @@ void Container::set_rlimit_ext(const char *res_name, int res, rlim_t limit) {
 
 void Container::setup_rlimits() {
     if (task_data_->fsize_limit_kb != -1) {
-        set_rlimit(RLIMIT_FSIZE, task_data_->fsize_limit_kb);
+        set_rlimit(RLIMIT_FSIZE, static_cast<unsigned>(task_data_->fsize_limit_kb));
     }
 
     set_rlimit(RLIMIT_STACK, RLIM_INFINITY);
-    set_rlimit(RLIMIT_NOFILE, (task_data_->max_files == -1 ? RLIM_INFINITY : task_data_->max_files));
-    set_rlimit(RLIMIT_NPROC, (task_data_->max_threads == -1 ? RLIM_INFINITY : task_data_->max_threads));
+    set_rlimit(RLIMIT_NOFILE, (task_data_->max_files == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_files)));
+    set_rlimit(RLIMIT_NPROC, (task_data_->max_threads == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_threads)));
     set_rlimit(RLIMIT_MEMLOCK, 0);
     set_rlimit(RLIMIT_MSGQUEUE, 0);
 }

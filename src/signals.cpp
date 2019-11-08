@@ -120,7 +120,7 @@ void enable_timer_interrupts() {
     signal_actions.at(SIGALRM).get().apply_to(SIGALRM, false);
 }
 
-void start_timer(long interval) {
+void start_timer(uint32_t interval) {
     struct itimerval timer = {};
     memset(&timer, 0, sizeof(timer));
     timer.it_interval.tv_usec = interval * 1000;

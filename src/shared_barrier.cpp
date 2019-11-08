@@ -8,7 +8,7 @@
 
 #include <unistd.h>
 
-SharedBarrier::SharedBarrier(int count) {
+SharedBarrier::SharedBarrier(uint32_t count) {
     barrier_ = std::make_unique<SharedMemoryObject<pthread_barrier_t>>();
     init(count);
     owner_pid_ = getpid();
@@ -27,12 +27,12 @@ void SharedBarrier::wait() {
     }
 }
 
-void SharedBarrier::reset(int count) {
+void SharedBarrier::reset(uint32_t count) {
     destroy();
     init(count);
 }
 
-void SharedBarrier::init(int count) {
+void SharedBarrier::init(uint32_t count) {
     pthread_barrierattr_t barrierattr;
     if (pthread_barrierattr_init(&barrierattr) != 0) {
         die(format("Failed to initialize barrierattr: %m"));

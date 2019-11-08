@@ -17,7 +17,7 @@ template<typename T>
 class SharedMemoryArray {
 public:
     explicit SharedMemoryArray(size_t size) : size_(size) {
-        ptr_ = (T *) allocate_shared_memory(sizeof(T) * size);
+        ptr_ = static_cast<T *>(allocate_shared_memory(sizeof(T) * size));
         ptr_ = new(ptr_) T[size]();
         if (ptr_ == MAP_FAILED) {
             die(format("Cannot allocate %zu bytes of shared memory: %m", sizeof(T)));

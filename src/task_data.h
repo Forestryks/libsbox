@@ -8,14 +8,14 @@
 #include "plain_string.h"
 #include "plain_vector.h"
 #include "plain_string_vector.h"
-#include "limits.h"
+#include "defines.h"
 #include "context_manager.h"
 #include "utils.h"
 
 #include <limits.h>
 
 struct IOStream {
-    int fd = -1;
+    fd_t fd = -1;
     PlainString<PATH_MAX> filename;
 };
 
@@ -38,12 +38,12 @@ struct BindData {
 
 struct TaskData {
     // parameters
-    long time_limit_ms = -1;
-    long wall_time_limit_ms = -1;
-    long memory_limit_kb = -1;
-    long fsize_limit_kb = -1;
-    int max_files = 16;
-    int max_threads = 1;
+    time_ms_t time_limit_ms = -1;
+    time_ms_t wall_time_limit_ms = -1;
+    memory_kb_t memory_limit_kb = -1;
+    memory_kb_t fsize_limit_kb = -1;
+    int32_t max_files = 16;
+    int32_t max_threads = 1;
     bool ipc = false;
     bool standard_binds = true;
 
@@ -54,11 +54,11 @@ struct TaskData {
     PlainVector<BindData, BINDS_MAX> binds;
 
     // results
-    long time_usage_ms = 0;
-    long time_usage_sys_ms = 0;
-    long time_usage_user_ms = 0;
-    long wall_time_usage_ms = 0;
-    long memory_usage_kb = 0;
+    time_ms_t time_usage_ms = 0;
+    time_ms_t time_usage_sys_ms = 0;
+    time_ms_t time_usage_user_ms = 0;
+    time_ms_t wall_time_usage_ms = 0;
+    memory_kb_t memory_usage_kb = 0;
 
     bool time_limit_exceeded = false;
     bool wall_time_limit_exceeded = false;

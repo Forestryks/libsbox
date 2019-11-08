@@ -44,7 +44,7 @@ void Daemon::run() {
     // Spawn workers
     num_boxes_ = Config::get().get_num_boxes();
     workers_.reserve(num_boxes_);
-    for (int i = 0; i < num_boxes_; ++i) {
+    for (uint32_t i = 0; i < num_boxes_; ++i) {
         Worker *worker = new Worker(server_socket_fd_, id_getter_.get());
         if (worker->start() < 0) {
             die(format("Failed to spawn worker: %m"));
@@ -83,7 +83,7 @@ void Daemon::run() {
         }
     }
 
-    for (int i = 0; i < (int) workers_.size(); ++i) {
+    for (size_t i = 0; i < workers_.size(); ++i) {
         int status;
         pid_t pid = wait(&status);
         if (pid < 0) {
@@ -112,7 +112,7 @@ void Daemon::prepare() {
 
     umask(022);
 
-    int fd = open("/run/libsboxd.pid", O_CREAT | O_EXCL | O_WRONLY);
+    fd_t fd = open("/run/libsboxd.pid", O_CREAT | O_EXCL | O_WRONLY);
     if (fd < 0) {
         // We don't call die() here, because it will try to cleanup and remove /run/libsboxd.pid even if current process
         // don't own it
@@ -152,7 +152,7 @@ void Daemon::prepare() {
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
     strncpy(addr.sun_path, socket_path_.c_str(), sizeof(addr.sun_path) - 1);
-    if (bind(server_socket_fd_, (const sockaddr *) &addr, sizeof(sockaddr_un)) != 0) {
+    if (bind(server_socket_fd_, reinterpret_cast<const sockaddr *>(&addr), sizeof(sockaddr_un)) != 0) {
         die(format("Failed to bind UNIX socket to @%s: %m", socket_path_.c_str()));
     }
 

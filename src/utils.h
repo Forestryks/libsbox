@@ -11,7 +11,7 @@
 namespace fs = std::filesystem;
 
 // Format string using printf format from va_list
-std::string vformat(const char &fmt, va_list args);
+std::string vformat(const char *fmt, va_list args);
 
 // Format string using printf format
 __attribute__((format(printf, 1, 2)))

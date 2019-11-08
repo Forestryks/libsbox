@@ -24,7 +24,7 @@ void reset_sigchld();
 void enable_timer_interrupts();
 
 // Start timer which will send SIGALRM every interval_ms milliseconds
-void start_timer(long interval_ms);
+void start_timer(uint32_t interval_ms);
 void stop_timer();
 
 // Can be checked after signal handler returns, if true, SIGALRM was received

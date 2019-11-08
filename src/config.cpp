@@ -44,7 +44,7 @@ void Config::load() {
     }
 }
 
-int Config::get_num_boxes() const {
+uint32_t Config::get_num_boxes() const {
     return num_boxes_;
 }
 
@@ -52,7 +52,7 @@ const fs::path &Config::get_socket_path() const {
     return socket_path_;
 }
 
-int Config::get_first_uid() const {
+uid_t Config::get_first_uid() const {
     return first_uid_;
 }
 
@@ -64,6 +64,6 @@ const fs::path &Config::get_cgroup_root() const {
     return cgroup_root_;
 }
 
-int Config::get_timer_interval_ms() const {
+uint32_t Config::get_timer_interval_ms() const {
     return timer_interval_ms_;
 }

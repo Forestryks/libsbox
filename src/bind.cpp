@@ -36,7 +36,7 @@ void Bind::set_paths(const fs::path &root_dir, const fs::path &work_dir) {
 
 void Bind::mount(const fs::path &root_dir, const fs::path &work_dir) {
     set_paths(root_dir, work_dir);
-    int mount_flags = (MS_BIND | MS_REC);
+    unsigned long mount_flags = (MS_BIND | MS_REC);
     if (!(flags_ & Rules::RW)) {
         mount_flags |= MS_RDONLY;
     }

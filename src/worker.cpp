@@ -14,7 +14,7 @@
 
 Worker *Worker::worker_ = nullptr;
 
-Worker::Worker(int server_socket_fd, SharedIdGetter *id_getter)
+Worker::Worker(fd_t server_socket_fd, SharedIdGetter *id_getter)
     : server_socket_fd_(server_socket_fd), id_getter_(id_getter) {}
 
 Worker &Worker::get() {
@@ -95,7 +95,7 @@ void Worker::serve() {
             buf[bytes_read] = 0;
             request += buf;
 
-            if ((int) strlen(buf) < bytes_read) {
+            if (strlen(buf) < static_cast<size_t>(bytes_read)) {
                 // null-byte occurs in buf
                 break;
             }
@@ -103,7 +103,8 @@ void Worker::serve() {
 
         std::string response = process(request);
 
-        if (write(socket_fd_, response.c_str(), response.size()) != (int) response.size()) {
+        int cnt = write(socket_fd_, response.c_str(), response.size());
+        if (cnt < 0 || static_cast<size_t>(cnt) != response.size()) {
             die(format("Cannot send response: %m"));
         }
 
@@ -120,7 +121,7 @@ std::string Worker::process(const std::string &request) {
 
     prepare_containers(json_request);
     // To start execution we must wait for worker + all containers + all slaves
-    run_start_barrier_.reset((int) containers_.size() * 2 + 1);
+    run_start_barrier_.reset(containers_.size() * 2 + 1);
     write_tasks(json_request);
     run_tasks();
     close_pipes();
@@ -145,7 +146,7 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
 
     try {
         const nlohmann::json &json_tasks = json_request.at("tasks");
-        int next_persistent_container = 0;
+        size_t next_persistent_container = 0;
         for (const auto &json_task : json_tasks) {
             bool persistence_allowed = true;
             if (json_task.at("ipc").get<bool>() || !json_task.at("standard_binds").get<bool>()) {
@@ -154,7 +155,7 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
 
             Container *created_container = nullptr;
             if (persistence_allowed) {
-                if (next_persistent_container == (int) persistent_containers_.size()) {
+                if (next_persistent_container == persistent_containers_.size()) {
                     created_container = new Container(id_getter_->get(), true);
                     persistent_containers_.emplace_back(created_container);
                 }
@@ -180,7 +181,7 @@ void Worker::prepare_containers(const nlohmann::json &json_request) {
 void Worker::write_tasks(const nlohmann::json &json_request) {
     try {
         const nlohmann::json &json_tasks = json_request.at("tasks");
-        for (int i = 0; i < (int) json_tasks.size(); ++i) {
+        for (size_t i = 0; i < json_tasks.size(); ++i) {
             containers_[i]->parse_task_from_json(json_tasks[i]);
         }
     } catch (const nlohmann::json::exception &e) {
@@ -238,9 +239,9 @@ void Worker::sigchld_action(int, siginfo_t *siginfo, void *) {
     }
 }
 
-std::pair<int, int> Worker::get_pipe(const std::string &pipe_name) {
+std::pair<fd_t, fd_t> Worker::get_pipe(const std::string &pipe_name) {
     if (pipes_.find(pipe_name) == pipes_.end()) {
-        int fd[2];
+        fd_t fd[2];
         if (pipe(fd) != 0) {
             die(format("Cannot create pipe: %m"));
         }

@@ -14,7 +14,7 @@
 
 class Worker : public ContextManager {
 public:
-    Worker(int server_socket_fd, SharedIdGetter *id_getter);
+    Worker(fd_t server_socket_fd, SharedIdGetter *id_getter);
 
     static Worker &get();
     pid_t start();
@@ -25,12 +25,12 @@ public:
 
     [[nodiscard]] pid_t get_pid() const;
 
-    std::pair<int, int> get_pipe(const std::string &pipe_name);
+    std::pair<fd_t, fd_t> get_pipe(const std::string &pipe_name);
     SharedBarrier *get_run_start_barrier();
 private:
     static Worker *worker_;
-    int server_socket_fd_;
-    int socket_fd_ = -1;
+    fd_t server_socket_fd_;
+    fd_t socket_fd_ = -1;
     SharedIdGetter *id_getter_;
     SharedBarrier run_start_barrier_{1};
     pid_t pid_{-1};
@@ -41,7 +41,7 @@ private:
     std::vector<std::unique_ptr<Container>> temporary_containers_;
     std::vector<Container *> containers_;
 
-    std::map<std::string, std::pair<int, int>> pipes_;
+    std::map<std::string, std::pair<fd_t, fd_t>> pipes_;
     void close_pipes();
 
     [[noreturn]]

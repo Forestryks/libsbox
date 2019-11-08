@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 
 class Container : public ContextManager {
 public:
-    Container(int id, bool persistent);
+    Container(uid_t id, bool persistent);
     ~Container() = default;
 
     static Container &get();
@@ -29,7 +29,7 @@ public:
     void parse_task_from_json(const nlohmann::json &json_task);
     nlohmann::json results_to_json();
 
-    int get_id();
+    uid_t get_id();
     pid_t get_pid();
     SharedBarrier *get_barrier();
 
@@ -39,7 +39,7 @@ public:
 private:
     static Container *container_;
 
-    int id_;
+    uid_t id_;
     pid_t pid_{};
     bool persistent_;
     SharedMemoryObject<TaskData> task_data_{};
@@ -60,15 +60,15 @@ private:
     void wait_for_slave();
     void kill_all();
     void reset_wall_clock();
-    long get_wall_clock();
-    long get_time_usage_ms();
-    long get_time_usage_sys_ms();
-    long get_time_usage_user_ms();
-    long get_memory_usage_kb();
+    time_ms_t get_wall_clock_ms();
+    time_ms_t get_time_usage_ms();
+    time_ms_t get_time_usage_sys_ms();
+    time_ms_t get_time_usage_user_ms();
+    memory_kb_t get_memory_usage_kb();
     bool is_oom_killed();
     bool is_memory_limit_hit();
 
-    int exec_fd_ = -1;
+    fd_t exec_fd_ = -1;
 
     [[noreturn]]
     void slave();

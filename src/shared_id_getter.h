@@ -15,17 +15,17 @@
 class SharedIdGetter {
 public:
     // Initialize getter with IDs in segment [start, start + count - 1]
-    SharedIdGetter(int start, int count);
+    SharedIdGetter(uid_t start, uid_t count);
     ~SharedIdGetter() = default;
 
     // Get new unique ID, will fail if no free IDs left
-    int get();
+    uid_t get();
 
     // Put given ID back
-    void put(int id);
+    void put(uid_t id);
 private:
-    std::unique_ptr<SharedMemoryArray<int>> ids_stack_;
-    std::unique_ptr<SharedMemoryObject<int>> stack_head_;
+    std::unique_ptr<SharedMemoryArray<uid_t>> ids_stack_;
+    std::unique_ptr<SharedMemoryObject<size_t>> stack_head_;
     SharedMutex mutex_;
 };
 

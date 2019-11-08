@@ -5,19 +5,21 @@
 #ifndef LIBSBOX_LOGGER_H
 #define LIBSBOX_LOGGER_H
 
+#include "defines.h"
+
 #include <string>
 
 class Logger {
 public:
     static Logger &get();
     void _log(std::string msg);
-    int get_fd() const;
+    fd_t get_fd() const;
     static void init();
 private:
     static Logger *logger_;
     Logger();
 
-    int fd_;
+    fd_t fd_;
 };
 
 #define log(msg) Logger::get()._log(msg)

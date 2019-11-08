@@ -13,15 +13,15 @@
 // Multiprocess barrier
 class SharedBarrier {
 public:
-    explicit SharedBarrier(int count);
+    explicit SharedBarrier(uint32_t count);
     ~SharedBarrier();
     void wait();
-    void reset(int count);
+    void reset(uint32_t count);
 private:
     std::unique_ptr<SharedMemoryObject<pthread_barrier_t>> barrier_;
     pid_t owner_pid_;
 
-    void init(int count);
+    void init(uint32_t count);
     void destroy();
 };
 

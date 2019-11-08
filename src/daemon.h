@@ -32,10 +32,10 @@ private:
     static Daemon *daemon_;
 
     fs::path socket_path_;
-    int server_socket_fd_{};
+    fd_t server_socket_fd_{};
     std::unique_ptr<SharedIdGetter> id_getter_;
     volatile bool terminated_ = false;
-    int num_boxes_{};
+    uint32_t num_boxes_{};
     std::vector<std::unique_ptr<Worker>> workers_;
 
     void prepare();

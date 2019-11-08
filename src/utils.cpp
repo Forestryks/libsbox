@@ -4,6 +4,7 @@
 
 #include "utils.h"
 #include "context_manager.h"
+#include "defines.h"
 
 #include <vector>
 #include <cstring>
@@ -19,7 +20,7 @@ std::string vformat(const char *fmt, va_list args) {
         va_copy(args2, args);
         int res = vsnprintf(result.data(), result.size(), fmt, args2);
 
-        if ((res >= 0) && (res < static_cast<int>(result.size()))) {
+        if ((res >= 0) && (static_cast<size_t>(res) < result.size())) {
             va_end(args);
             va_end(args2);
             return std::string(result.data());
@@ -45,11 +46,12 @@ std::string format(const char *fmt, ...) {
 }
 
 void write_file(const fs::path &path, const std::string &data) {
-    int fd = open(path.c_str(), O_WRONLY);
+    fd_t fd = open(path.c_str(), O_WRONLY);
     if (fd < 0) {
         die(format("Cannot open file '%s' for writing: %m", path.c_str()));
     }
-    if (write(fd, data.c_str(), data.size()) != (int) data.size()) {
+    int cnt = write(fd, data.c_str(), data.size());
+    if (cnt < 0 || static_cast<size_t>(cnt) != data.size()) {
         die(format("Cannot write to file '%s': %m", path.c_str()));
     }
     if (close(fd) != 0) {
@@ -58,12 +60,12 @@ void write_file(const fs::path &path, const std::string &data) {
 }
 
 namespace {
-const int READ_BUF_SIZE = 2048;
+const size_t READ_BUF_SIZE = 2048;
 char read_buf[READ_BUF_SIZE];
 }
 
 std::string read_file(const fs::path &path) {
-    int fd = open(path.c_str(), O_RDONLY);
+    fd_t fd = open(path.c_str(), O_RDONLY);
     if (fd < 0) {
         die(format("Cannot open file '%s' for reading: %m", path.c_str()));
     }

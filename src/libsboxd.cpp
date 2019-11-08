@@ -122,25 +122,25 @@
 // CLOSED(#3@forestryks): don't close error pipe before exec
 // CLOSED(#4@forestryks): -2 = dup stdout
 // CLOSED(#5@forestryks): disable standard rules parameter
-// TODO:re(#6@forestryks): setters/getters in task_data
+// WONTFIX(#6@forestryks): setters/getters in task_data upd:reopened
 // WONTFIX(#7@forestryks): error pipe capacity?
 // CLOSED(#8@forestryks): logging
 // WONTFIX?(#9@forestryks): optimize memory (delete all unnecessary before entering cgroups)
 // CLOSED(#10@forestryks): save in Bind
 // CLOSED(#11@forestryks): check memory usage overhead
 // WONTFIX?(#12@forestryks): non-critical request error handling
-// DONE(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
+// CLOSED(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
 // CLOSED(#14@forestryks): cleanup cgroups
 // TODO(#15@forestryks): constructors and destructors must not create/destroy shared data
 // CLOSED(#16@forestryks): errors in plain structures
 // CLOSED(#17@forestryks): consider using exceptions
-// TODO(#18@forestryks): use correct data types (e.g. unsigned)
+// CLOSED(#18@forestryks): use correct data types
 // TODO(#19@forestryks): update description + add dir setup
 // TODO(#20@forestryks): ownership and reset in shared_barrier (may be fixed automatically after #15)
 // WONTFIX(#21@forestryks): normal debug
 // CLOSED(#22@forestryks): never use exit(), use _exit()
 // CLOSED(#23@forestryks): restore default SIGCHLD in containers
-// TODO(#24@forestryks): don't use C-style casts
+// CLOSED(#24@forestryks): don't use C-style casts
 // TODO(#25@forestryks): add tests (esp for pipes)
 // CLOSED(#26@forestryks): always use die()
 // CLOSED(#27@forestryks): synchronize in slave too
@@ -149,9 +149,10 @@
 // CLOSED(#30@forestryks): memory controller failcnt
 // TODO(#31@forestryks): re-read memory controller to ensure that limit is set
 // TODO(#32@forestryks): omm_killed and memory_limit_hit multi-threading support
-// TODO(#33@forestryks): use STD*_FILENO
+// CLOSED(#33@forestryks): use STD*_FILENO
 // TODO(#34@forestryks): write logs?
 // CLOSED(#35@forestryks): kill_all() after first child exited
+// CLOSED(#35@forestryks): correct data types in task_data
 
 #include "daemon.h"
 

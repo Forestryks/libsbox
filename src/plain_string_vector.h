@@ -26,7 +26,7 @@ public:
         return items_.size() - 1;
     }
 
-    const char *operator[](int pos) const {
+    const char *operator[](size_t pos) const {
         return items_[pos];
     }
 

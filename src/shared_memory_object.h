@@ -17,7 +17,7 @@ class SharedMemoryObject {
 public:
     template<typename ...Args>
     explicit SharedMemoryObject(Args &&... args) {
-        ptr_ = (T *) allocate_shared_memory(sizeof(T));
+        ptr_ = static_cast<T *>(allocate_shared_memory(sizeof(T)));
         ptr_ = new(ptr_) T(args...);
         if (ptr_ == MAP_FAILED) {
             die(format("Cannot allocate %zu bytes of shared memory: %m", sizeof(T)));

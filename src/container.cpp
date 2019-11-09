@@ -233,8 +233,8 @@ void Container::serve() {
 
         cpuacct_controller_ = new CgroupController("cpuacct", std::to_string(id_));
         memory_controller_ = new CgroupController("memory", std::to_string(id_));
-        if (task_data_->memory_limit_kb != 0) {
-            cpuacct_controller_->write("memory.limit_in_bytes", std::to_string(task_data_->memory_limit_kb) + "K");
+        if (task_data_->memory_limit_kb != -1) {
+            memory_controller_->write("memory.limit_in_bytes", std::to_string(task_data_->memory_limit_kb) + "K");
         }
 
         slave_pid_ = fork();

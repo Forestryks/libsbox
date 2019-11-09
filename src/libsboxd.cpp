@@ -131,12 +131,12 @@
 // WONTFIX?(#12@forestryks): non-critical request error handling
 // CLOSED(#13@forestryks): https://www.freedesktop.org/software/systemd/man/daemon.html#New-Style%20Daemons
 // CLOSED(#14@forestryks): cleanup cgroups
-// TODO(#15@forestryks): constructors and destructors must not create/destroy shared data
+// WONTFIX(#15@forestryks): constructors and destructors must not create/destroy shared data
 // CLOSED(#16@forestryks): errors in plain structures
 // CLOSED(#17@forestryks): consider using exceptions
 // CLOSED(#18@forestryks): use correct data types
 // TODO(#19@forestryks): update description + add dir setup
-// TODO(#20@forestryks): ownership and reset in shared_barrier (may be fixed automatically after #15)
+// WONTFIX(#20@forestryks): ownership and reset in shared_barrier (may be fixed automatically after #15)
 // WONTFIX(#21@forestryks): normal debug
 // CLOSED(#22@forestryks): never use exit(), use _exit()
 // CLOSED(#23@forestryks): restore default SIGCHLD in containers
@@ -147,10 +147,10 @@
 // CLOSED(#28@forestryks): don't update config on install
 // CLOSED(#29@forestryks): race condition when opening/closing fds (upd: there is no race condition in fact)
 // CLOSED(#30@forestryks): memory controller failcnt
-// TODO(#31@forestryks): re-read memory controller to ensure that limit is set
-// TODO(#32@forestryks): omm_killed and memory_limit_hit multi-threading support
+// WONTFIX?(#31@forestryks): re-read memory controller to ensure that limit is set
+// CLOSED(#32@forestryks): omm_killed and memory_limit_hit multi-threading support
 // CLOSED(#33@forestryks): use STD*_FILENO
-// TODO(#34@forestryks): write logs?
+// WONTFIX?(#34@forestryks): write logs?
 // CLOSED(#35@forestryks): kill_all() after first child exited
 // CLOSED(#35@forestryks): correct data types in task_data
 

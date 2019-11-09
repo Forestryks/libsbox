@@ -153,6 +153,7 @@
 // WONTFIX?(#34@forestryks): write logs?
 // CLOSED(#35@forestryks): kill_all() after first child exited
 // CLOSED(#35@forestryks): correct data types in task_data
+// TODO(#36@forestryks): rewrite libsbox.h
 
 #include "daemon.h"
 

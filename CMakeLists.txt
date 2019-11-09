@@ -43,9 +43,19 @@ endif ()
 include_directories(external/include)
 
 install(
+    FILES external/include/json.hpp
+    DESTINATION include/libsbox/external
+)
+
+install(
     CODE
     "execute_process(COMMAND ./prepare.sh
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})"
+)
+
+install(
+    FILES include/libsbox.h
+    DESTINATION include
 )
 
 enable_testing()

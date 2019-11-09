@@ -12,7 +12,7 @@
 
 #include <sys/signal.h>
 
-class Worker : public ContextManager {
+class Worker final : public ContextManager {
 public:
     Worker(fd_t server_socket_fd, SharedIdGetter *id_getter);
 

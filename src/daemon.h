@@ -16,7 +16,7 @@
 
 namespace fs = std::filesystem;
 
-class Daemon : public ContextManager {
+class Daemon final : public ContextManager {
 public:
     Daemon() = default;
 

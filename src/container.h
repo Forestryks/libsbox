@@ -18,7 +18,7 @@
 
 namespace fs = std::filesystem;
 
-class Container : public ContextManager {
+class Container final : public ContextManager {
 public:
     Container(uid_t id, bool persistent);
     ~Container() = default;

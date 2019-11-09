@@ -233,6 +233,9 @@ void Container::serve() {
 
         cpuacct_controller_ = new CgroupController("cpuacct", std::to_string(id_));
         memory_controller_ = new CgroupController("memory", std::to_string(id_));
+        if (task_data_->memory_limit_kb != 0) {
+            cpuacct_controller_->write("memory.limit_in_bytes", std::to_string(task_data_->memory_limit_kb) + "K");
+        }
 
         slave_pid_ = fork();
         if (slave_pid_ < 0) {
@@ -558,8 +561,10 @@ void Container::setup_rlimits() {
     }
 
     set_rlimit(RLIMIT_STACK, RLIM_INFINITY);
-    set_rlimit(RLIMIT_NOFILE, (task_data_->max_files == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_files)));
-    set_rlimit(RLIMIT_NPROC, (task_data_->max_threads == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_threads)));
+    set_rlimit(RLIMIT_NOFILE,
+        (task_data_->max_files == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_files)));
+    set_rlimit(RLIMIT_NPROC,
+        (task_data_->max_threads == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_threads)));
     set_rlimit(RLIMIT_MEMLOCK, 0);
     set_rlimit(RLIMIT_MSGQUEUE, 0);
 }

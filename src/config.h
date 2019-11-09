@@ -13,12 +13,12 @@ class Config {
 public:
     static const Config &get();
 
-    [[nodiscard]] uint32_t get_num_boxes() const;
-    [[nodiscard]] const fs::path &get_socket_path() const;
-    [[nodiscard]] uid_t get_first_uid() const;
-    [[nodiscard]] const fs::path &get_box_dir() const;
-    [[nodiscard]] const fs::path &get_cgroup_root() const;
-    [[nodiscard]] uint32_t get_timer_interval_ms() const;
+    uint32_t get_num_boxes() const;
+    const fs::path &get_socket_path() const;
+    uid_t get_first_uid() const;
+    const fs::path &get_box_dir() const;
+    const fs::path &get_cgroup_root() const;
+    uint32_t get_timer_interval_ms() const;
 private:
     static Config config_;
 

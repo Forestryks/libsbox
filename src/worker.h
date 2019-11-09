@@ -23,7 +23,7 @@ public:
     void _die(const std::string &error) override;
     void terminate() override;
 
-    [[nodiscard]] pid_t get_pid() const;
+    pid_t get_pid() const;
 
     std::pair<fd_t, fd_t> get_pipe(const std::string &pipe_name);
     SharedBarrier *get_run_start_barrier();

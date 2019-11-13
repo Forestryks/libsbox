@@ -36,6 +36,11 @@ script:
   - cmake ..
   - make
 
+  # Some testing
+  - cd ../testing
+  - make
+  - sudo time ./client 1000
+
   # Running tests
   # - sudo swapoff -a
   # - sudo CTEST_OUTPUT_ON_FAILURE=true make test

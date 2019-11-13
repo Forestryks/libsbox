@@ -35,11 +35,14 @@ script:
   - cd build
   - cmake ..
   - make
+  - yes sudo make install
 
-  # Some testing
+  # Some testing 
+  - sudo libsboxd &
   - cd ../testing
   - make
   - sudo time ./client 1000
+  - kill -SIGSTOP %1
 
   # Running tests
   # - sudo swapoff -a

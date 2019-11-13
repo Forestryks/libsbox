@@ -13,8 +13,8 @@
       "stdin": null,
       "stdout": "@pipe_name",
       "stderr": "@stderr",
-      "ipc": false,
-      "standard_rules": true,
+      "need_ipc": false,
+      "use_standard_binds": true,
       "binds": [
         {
           "inside": "input.txt",

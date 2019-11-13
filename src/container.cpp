@@ -22,7 +22,7 @@
 
 Container *Container::container_ = nullptr;
 
-Container::Container(uid_t id, bool persistent) : id_(id), persistent_(persistent) {}
+Container::Container(uid_t id, bool permanent) : id_(id), permanent_(permanent) {}
 
 void Container::_die(const std::string &error) {
     if (slave_pid_ == 0) {
@@ -52,20 +52,23 @@ SharedBarrier *Container::get_barrier() {
     return &barrier_;
 }
 
-void Container::parse_task_from_json(const nlohmann::json &json_task) {
-    task_data_->time_limit_ms = json_task["time_limit_ms"];
-    task_data_->wall_time_limit_ms = json_task["wall_time_limit_ms"];
-    task_data_->memory_limit_kb = json_task["memory_limit_kb"];
-    task_data_->fsize_limit_kb = json_task["fsize_limit_kb"];
-    task_data_->max_files = json_task["max_files"];
-    task_data_->max_threads = json_task["max_threads"];
-    task_data_->ipc = json_task["ipc"];
-    task_data_->standard_binds = json_task["standard_binds"];
+void Container::set_task(libsbox::Task *task) {
+    task_data_->time_limit_ms = task->get_time_limit_ms();
+    task_data_->wall_time_limit_ms = task->get_wall_time_limit_ms();
+    task_data_->memory_limit_kb = task->get_memory_limit_kb();
+    task_data_->fsize_limit_kb = task->get_fsize_limit_kb();
+    task_data_->max_files = task->get_max_files();
+    task_data_->max_threads = task->get_max_threads();
+    task_data_->need_ipc = task->get_need_ipc();
+    task_data_->use_standard_binds = task->get_use_standard_binds();
 
     task_data_->stdin_desc.fd = -1;
     task_data_->stdin_desc.filename = "";
-    if (!json_task["stdin"].is_null() && !json_task["stdin"].empty()) {
-        std::string stdin_filename = json_task["stdin"];
+    std::string stdin_filename = task->get_stdin().get_filename();
+    if (stdin_filename.empty()) {
+        task_data_->stdin_desc.filename = "/dev/null";
+    } else {
+
         if (stdin_filename[0] == '@') {
             const auto &pipe = Worker::get().get_pipe(stdin_filename.substr(1));
             task_data_->stdin_desc.fd = pipe.first;
@@ -82,8 +85,10 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
 
     task_data_->stdout_desc.fd = -1;
     task_data_->stdout_desc.filename = "";
-    if (!json_task["stdout"].is_null() && !json_task["stdout"].empty()) {
-        std::string stdout_filename = json_task["stdout"];
+    std::string stdout_filename = task->get_stdout().get_filename();
+    if (stdout_filename.empty()) {
+        task_data_->stdout_desc.filename = "/dev/null";
+    } else {
         if (stdout_filename[0] == '@') {
             const auto &pipe = Worker::get().get_pipe(stdout_filename.substr(1));
             task_data_->stdout_desc.fd = pipe.second;
@@ -100,11 +105,13 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
 
     task_data_->stderr_desc.fd = -1;
     task_data_->stderr_desc.filename = "";
-    if (!json_task["stderr"].is_null() && !json_task["stderr"].empty()) {
-        std::string stderr_filename = json_task["stderr"];
+    std::string stderr_filename = task->get_stderr().get_filename();
+    if (stderr_filename.empty()) {
+        task_data_->stderr_desc.filename = "/dev/null";
+    } else {
         if (stderr_filename[0] == '@') {
             std::string pipe_name = stderr_filename.substr(1);
-            if (pipe_name == "stdout") {
+            if (pipe_name == "_stdout") {
                 task_data_->stderr_desc.fd = STDOUT_FILENO;
             } else {
                 const auto &pipe = Worker::get().get_pipe(pipe_name);
@@ -121,34 +128,34 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
         }
     }
 
-    size_t argv_size = json_task.at("argv").size();
+    size_t argv_size = task->get_argv().size();
     if (argv_size > task_data_->argv.max_count()) {
         die(format("argv size is larger than maximum (%zi > %zi)", argv_size, task_data_->argv.max_count()));
     }
     size_t total_size = 0;
     for (size_t i = 0; i < argv_size; ++i) {
-        total_size += json_task.at("argv").at(i).size();
+        total_size += task->get_argv()[i].size();
     }
     if (total_size > task_data_->argv.max_size()) {
         die(format("argv total size is larger than maximum (%zi > %zi)", total_size, task_data_->argv.max_size()));
     }
     task_data_->argv.clear();
-    for (const auto &arg : json_task.at("argv")) {
+    for (const auto &arg : task->get_argv()) {
         task_data_->argv.add(arg);
     }
 
     // ENV to do?
     task_data_->env.clear();
 
-    size_t binds_count = json_task.at("binds").size();
+    size_t binds_count = task->get_binds().size();
     if (binds_count > task_data_->binds.max_size()) {
         die(format("binds count is larger that maximum (%zi > %zi)", binds_count, task_data_->binds.max_size()));
     }
     task_data_->binds.clear();
-    for (const auto &bind : json_task.at("binds")) {
-        std::string inside = bind["inside"];
-        std::string outside = bind["outside"];
-        int flags = bind["flags"];
+    for (const auto &bind : task->get_binds()) {
+        std::string inside = bind.get_inside_path();
+        std::string outside = bind.get_outside_path();
+        int flags = bind.get_flags();
         task_data_->binds.emplace_back(inside, outside, flags);
     }
 
@@ -170,24 +177,20 @@ void Container::parse_task_from_json(const nlohmann::json &json_task) {
     task_data_->error = true;
 }
 
-nlohmann::json Container::results_to_json() {
-    return nlohmann::json::object(
-        {
-            {"time_usage_ms", task_data_->time_usage_ms},
-            {"time_usage_sys_ms", task_data_->time_usage_sys_ms},
-            {"time_usage_user_ms", task_data_->time_usage_user_ms},
-            {"wall_time_usage_ms", task_data_->wall_time_usage_ms},
-            {"memory_usage_kb", task_data_->memory_usage_kb},
-            {"time_limit_exceeded", task_data_->time_limit_exceeded},
-            {"wall_time_limit_exceeded", task_data_->wall_time_limit_exceeded},
-            {"exited", task_data_->exited},
-            {"exit_code", task_data_->exit_code},
-            {"signaled", task_data_->signaled},
-            {"term_signal", task_data_->term_signal},
-            {"oom_killed", task_data_->oom_killed},
-            {"memory_limit_hit", task_data_->memory_limit_hit}
-        }
-    );
+void Container::put_results(libsbox::Task *task) {
+    task->set_time_usage_ms(task_data_->time_usage_ms);
+    task->set_time_usage_sys_ms(task_data_->time_usage_sys_ms);
+    task->set_time_usage_user_ms(task_data_->time_usage_user_ms);
+    task->set_wall_time_usage_ms(task_data_->wall_time_usage_ms);
+    task->set_memory_usage_kb(task_data_->memory_usage_kb);
+    task->set_time_limit_exceeded(task_data_->time_limit_exceeded);
+    task->set_wall_time_limit_exceeded(task_data_->wall_time_limit_exceeded);
+    task->set_exited(task_data_->exited);
+    task->set_exit_code(task_data_->exit_code);
+    task->set_signaled(task_data_->signaled);
+    task->set_term_signal(task_data_->term_signal);
+    task->set_oom_killed(task_data_->oom_killed);
+    task->set_memory_limit_hit(task_data_->memory_limit_hit);
 }
 
 int Container::clone_callback(void *ptr) {
@@ -262,7 +265,7 @@ void Container::serve() {
         // Results ready
         barrier_.wait();
 
-        if (!persistent_) break;
+        if (!permanent_) break;
     }
 
     _exit(0);
@@ -285,7 +288,7 @@ void Container::prepare() {
     set_sigchld_action(sigchld_action_wrapper);
 
     prepare_root();
-    if (persistent_) {
+    if (permanent_) {
         disable_ipcs();
     }
 }
@@ -324,7 +327,7 @@ void Container::prepare_root() {
         die(format("Cannot create '/work' dir: %m"));
     }
 
-    if (task_data_->standard_binds) {
+    if (task_data_->use_standard_binds) {
         Bind::apply_standard_rules(root_, work_dir_);
     }
 }

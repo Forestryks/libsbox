@@ -5,7 +5,7 @@
 #ifndef LIBSBOX_LOGGER_H
 #define LIBSBOX_LOGGER_H
 
-#include "defines.h"
+#include "libsbox_internal.h"
 
 #include <string>
 

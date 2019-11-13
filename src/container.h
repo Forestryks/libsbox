@@ -10,8 +10,8 @@
 #include "shared_memory_object.h"
 #include "task_data.h"
 #include "cgroup_controller.h"
+#include "libsbox_internal.h"
 
-#include <json.hpp>
 #include <filesystem>
 #include <sys/resource.h>
 #include <signal.h>
@@ -20,14 +20,14 @@ namespace fs = std::filesystem;
 
 class Container final : public ContextManager {
 public:
-    Container(uid_t id, bool persistent);
+    Container(uid_t id, bool permanent);
     ~Container() = default;
 
     static Container &get();
 
     pid_t start();
-    void parse_task_from_json(const nlohmann::json &json_task);
-    nlohmann::json results_to_json();
+    void set_task(libsbox::Task *task);
+    void put_results(libsbox::Task *task);
 
     uid_t get_id();
     pid_t get_pid();
@@ -41,7 +41,7 @@ private:
 
     uid_t id_;
     pid_t pid_{};
-    bool persistent_;
+    bool permanent_;
     SharedMemoryObject<TaskData> task_data_{};
     SharedBarrier barrier_{2};
     fs::path root_;

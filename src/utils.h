@@ -17,9 +17,6 @@ std::string vformat(const char *fmt, va_list args);
 __attribute__((format(printf, 1, 2)))
 std::string format(const char *fmt, ...);
 
-// Format c++ string using printf format
-std::string format(const std::string &fmt, ...);
-
 // Write data to file with error checks
 void write_file(const fs::path &path, const std::string &data);
 

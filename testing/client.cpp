@@ -1,14 +1,7 @@
 #include <iostream>
-#include <unistd.h>
-#include <wait.h>
 #include <cstring>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <linux/limits.h>
-#include <sys/mount.h>
-#include <sys/socket.h>
-#include <sys/un.h>
+
+#include <libsbox.h>
 
 using namespace std;
 
@@ -29,50 +22,51 @@ void massert_internal(bool cond, int line, const char *msg) {
 
 #define massert(cond) massert_internal(cond, __LINE__, #cond)
 
-#define SOCKET_NAME "/etc/libsboxd/socket"
-#define BUFFER_SIZE 1024
-
-sockaddr_un addr;
-
-string msg;
-
 void run() {
-    int client_socket = socket(AF_UNIX, SOCK_STREAM, 0);
-    massert(client_socket >= 0);
+    libsbox::Task task;
+    task.set_time_limit_ms(1000);
+    task.set_argv({"/home/forestryks/Projects/libsbox/testing/test", "hello"});
+    task.set_time_limit_ms(1000);
+    task.set_wall_time_limit_ms(1000);
+    task.set_memory_limit_kb(262144);
+    task.set_fsize_limit_kb(262144);
+    task.set_max_files(16);
+    task.set_max_threads(1);
+    task.get_stdin().use_file("input");
+    task.get_stdout().use_file("output");
+    task.get_stderr().disable();
+    task.set_need_ipc(false);
+    task.set_use_standard_binds(true);
+    task.get_binds().emplace_back(".", "/home/forestryks/Projects/libsbox/testing/work").allow_write();
 
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, SOCKET_NAME, sizeof(addr.sun_path) - 1);
+    libsbox::run({&task});
+    if (libsbox::error) {
+        std::cout << libsbox::error.get() << std::endl;
+        _exit(1);
+    }
 
-    massert(connect(client_socket, (const struct sockaddr*)&addr, sizeof(struct sockaddr_un)) == 0);
-
-    int cnt = send(client_socket, msg.c_str(), msg.size() + 1, 0);
-    massert(cnt == msg.size() + 1);
-
-    char buf[1024];
-    cnt = recv(client_socket, buf, 1023, 0);
-    buf[cnt] = '\0';
-    massert(cnt > 0);
-    // cout << buf << endl;0
-
-    std::cout << buf << std::endl;
-
-    massert(close(client_socket) == 0);
+    std::cout << "time_usage_ms: " << task.get_time_usage_ms() << std::endl;
+    std::cout << "time_usage_user_ms: " << task.get_time_usage_user_ms() << std::endl;
+    std::cout << "time_usage_sys_ms: " << task.get_time_usage_sys_ms() << std::endl;
+    std::cout << "wall_time_usage_ms: " << task.get_wall_time_usage_ms() << std::endl;
+    std::cout << "memory_usage_kb: " << task.get_memory_usage_kb() << std::endl;
+    std::cout << "exited?: " << task.exited() << std::endl;
+    std::cout << "exit_code: " << task.get_exit_code() << std::endl;
+    std::cout << "signaled?: " << task.signaled() << std::endl;
+    std::cout << "term_signal: " << task.get_term_signal() << std::endl;
+    std::cout << "oom_killed?: " << task.is_oom_killed() << std::endl;
+    std::cout << "memory_limit_hit?: " << task.is_memory_limit_hit() << std::endl;
 }
 
 int main(int argc, char *argv[]) {
-    int cnt;
-    if (argc != 2) {
-        cnt = 1;
-    } else {
+    int cnt = 1;
+    if (argc == 2) {
         cnt = atoi(argv[1]);
     }
-    string line;
-    while (getline(cin, line)) {
-        msg += line;
-        msg += '\n';
-    }
+
     for (int i = 0; i < cnt; ++i) {
         std::cout << i + 1 << std::endl;
         run();
+        std::cout << std::endl;
     }
 }

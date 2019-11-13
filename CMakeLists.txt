@@ -36,16 +36,18 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
     CACHE PATH "Library output"
     )
 
-if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/include/json.hpp)
-    execute_process(COMMAND wget https://github.com/nlohmann/json/releases/download/v3.7.0/json.hpp
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
+set(RAPIDJSON_REPO_DIR "${PROJECT_BINARY_DIR}/rapidjson")
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/include/rapidjson)
+    execute_process(COMMAND git clone --depth=1 https://github.com/Tencent/rapidjson.git ${RAPIDJSON_REPO_DIR}
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
+    file(COPY ${RAPIDJSON_REPO_DIR}/include/rapidjson DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/external/include)
+    file(REMOVE_RECURSE ${RAPIDJSON_REPO_DIR})
 endif ()
-include_directories(external/include)
 
-install(
-    FILES external/include/json.hpp
-    DESTINATION include/libsbox/external
-)
+include_directories(SYSTEM external/include)
+include_directories(include)
+
+add_subdirectory(src)
 
 install(
     CODE
@@ -57,7 +59,3 @@ install(
     FILES include/libsbox.h
     DESTINATION include
 )
-
-enable_testing()
-
-add_subdirectory(src)

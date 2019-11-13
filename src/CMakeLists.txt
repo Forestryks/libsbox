@@ -5,6 +5,7 @@ project(libsbox)
 add_executable(
     libsboxd
     libsboxd.cpp
+    libsbox.cpp
     context_manager.cpp
     utils.cpp
     shared_memory.cpp
@@ -27,4 +28,14 @@ install(
     TARGETS libsboxd
     DESTINATION bin
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ WORLD_READ
+)
+
+add_library(
+    sbox
+    libsbox.cpp utils.cpp context_manager.cpp
+)
+
+install(
+    TARGETS sbox
+    DESTINATION lib
 )

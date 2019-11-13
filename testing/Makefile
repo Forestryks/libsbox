@@ -1,15 +1,18 @@
 CXX = g++
 CXXFLAGS = --std=c++17 -Wall -O2
 
-SRC = client.cpp test.cpp
-BIN = $(SRC:%.cpp=%)
-
-all: $(BIN)
+all: client test
 
 .PHONY: clean
 
 clean:
-	rm -f $(BIN)
+	rm -f client test
+
+client: client.cpp
+	g++ $(CXXFLAGS) -o client client.cpp -lsbox
+
+test: test.cpp
+	g++ $(CXXFLAGS) -o test test.cpp
 
 #CXX=clang++
 #CXXFLAGS=-g -std=c++11 -Wall -pedantic

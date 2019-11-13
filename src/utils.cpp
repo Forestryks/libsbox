@@ -4,7 +4,7 @@
 
 #include "utils.h"
 #include "context_manager.h"
-#include "defines.h"
+#include "libsbox_internal.h"
 
 #include <vector>
 #include <cstring>

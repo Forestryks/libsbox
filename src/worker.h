@@ -11,6 +11,7 @@
 #include "container.h"
 
 #include <sys/signal.h>
+#include <map>
 
 class Worker final : public ContextManager {
 public:
@@ -34,10 +35,11 @@ private:
     SharedIdGetter *id_getter_;
     SharedBarrier run_start_barrier_{1};
     pid_t pid_{-1};
+    std::vector<libsbox::Task *> tasks_;
 
     volatile bool terminated_ = false;
 
-    std::vector<std::unique_ptr<Container>> persistent_containers_;
+    std::vector<std::unique_ptr<Container>> permanent_containers_;
     std::vector<std::unique_ptr<Container>> temporary_containers_;
     std::vector<Container *> containers_;
 
@@ -47,9 +49,9 @@ private:
     [[noreturn]]
     void serve();
     std::string process(const std::string &request);
-    nlohmann::json parse_json(const std::string &request);
-    void prepare_containers(const nlohmann::json &json_request);
-    void write_tasks(const nlohmann::json &json_request);
+    void parse_json(const std::string &request);
+    void prepare_containers();
+    void write_tasks();
     void run_tasks();
     std::string collect_results();
 

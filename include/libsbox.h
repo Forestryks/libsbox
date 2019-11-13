@@ -6,150 +6,178 @@
 #define LIBSBOX_LIBSBOX_H
 
 #include <string>
-#include <libsbox/external/json.hpp>
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <vector>
 
 namespace libsbox {
+
+static const size_t ARGC_MAX = 128;
+static const size_t ENVC_MAX = 0;
+static const size_t BINDS_MAX = 10;
+static const size_t ARGV_MAX = 4096;
+static const size_t ENV_MAX = 0;
 
 using time_ms_t = int64_t;
 using memory_kb_t = int64_t;
 using fd_t = int;
 
-class Bind {
+static const int unlimited = -1;
+
+class Error {
 public:
-    Bind(std::string inside, std::string outside) : inside_(std::move(inside)), outside_(std::move(outside)) {}
+    explicit Error(const std::string &msg);
 
-    Bind &allow_write() {
-        flags_ |= READWRITE;
-        return (*this);
-    }
+    explicit operator bool() const;
+    const std::string &get() const;
+    void set(const std::string &msg);
 
-    Bind &allow_dev() {
-        flags_ |= DEV;
-        return (*this);
-    }
+private:
+    std::string error_;
+};
 
-    Bind &forbid_exec() {
-        flags_ |= NOEXEC;
-        return (*this);
-    }
+extern Error error;
 
-    Bind &allow_suid() {
-        flags_ |= SUID;
-        return (*this);
-    }
+class BindRule {
+public:
+    BindRule(const std::string &inside, const std::string &outside);
+    BindRule(const std::string &inside, const std::string &outside, int flags);
 
-    Bind &make_optional() {
-        flags_ |= OPT;
-        return (*this);
-    }
+    BindRule &allow_write();
+    BindRule &allow_dev();
+    BindRule &forbid_exec();
+    BindRule &allow_suid();
+    BindRule &make_optional();
 
+    enum {
+        WRITABLE = 1,
+        DEV_ALLOWED = 2,
+        EXEC_FORBIDDEN = 4,
+        SUID_ALLOWED = 8,
+        OPTIONAL = 16
+    };
+
+    const std::string &get_inside_path() const;
+    const std::string &get_outside_path() const;
+    int get_flags() const;
 private:
     std::string inside_;
     std::string outside_;
-    int flags_ = 0;
+    int flags_;
 
-    enum {
-        READWRITE = 1,
-        DEV = 2,
-        NOEXEC = 4,
-        SUID = 8,
-        OPT = 16
-    };
+    template<class Writer>
+    void serialize_request(Writer &writer) const;
+    template<class Value>
+    BindRule(const Value &value);
 
-    friend void to_json(nlohmann::json &json, const Bind &bind);
+    friend class Task;
 };
-
-inline void to_json(nlohmann::json &json, const Bind &bind) {
-    json = nlohmann::json(
-        {
-            {"inside", bind.inside_},
-            {"outside", bind.outside_},
-            {"flags", bind.flags_}
-        }
-    );
-}
 
 class Pipe {
 public:
-    Pipe() {
-        static int32_t counter = 0;
-        name_ = "pipe-" + std::to_string(counter++);
-    }
+    Pipe();
 
 private:
-    const std::string &get_name() const {
-        return name_;
-    }
-
     std::string name_;
+    const std::string &get_name() const;
+
     friend class Stream;
 };
 
 class Stream {
 public:
-    void disable() {
-        filename_.clear();
-    }
+    void disable();
+    void use_pipe(const Pipe &pipe);
+    void use_file(const std::string &filename);
 
-    void use_pipe(const Pipe &pipe) {
-        filename_ = "@" + pipe.get_name();
-    }
-
-    void use_file(const std::string &filename) {
-        filename_ = filename;
-    }
-
+    const std::string &get_filename() const;
 protected:
     std::string filename_;
     Stream() = default;
+
 private:
+    template<class Writer>
+    void serialize_request(Writer &writer) const;
+    template<class Value>
+    void deserialize_request(const Value &value);
+
     friend class Task;
 };
 
 class StderrStream : public Stream {
 public:
-    void use_stdout() {
-        filename_ = "@stdout";
-    }
+    void use_stdout();
 };
 
 class Task {
 public:
+    time_ms_t get_time_limit_ms() const;
     void set_time_limit_ms(time_ms_t time_limit_ms);
+    time_ms_t get_wall_time_limit_ms() const;
     void set_wall_time_limit_ms(time_ms_t wall_time_limit_ms);
+    memory_kb_t get_memory_limit_kb() const;
     void set_memory_limit_kb(memory_kb_t memory_limit_kb);
+    memory_kb_t get_fsize_limit_kb() const;
     void set_fsize_limit_kb(memory_kb_t fsize_limit_kb);
+    int32_t get_max_files() const;
     void set_max_files(int32_t max_files);
+    int32_t get_max_threads() const;
     void set_max_threads(int32_t max_threads);
+    bool get_need_ipc() const;
     void set_need_ipc(bool need_ipc);
+    bool get_use_standard_binds() const;
     void set_use_standard_binds(bool use_standard_binds);
 
     Stream &get_stdin();
     Stream &get_stdout();
     StderrStream &get_stderr();
 
+    const std::vector<std::string> &get_argv() const;
     void set_argv(const std::vector<std::string> &argv);
-    void set_env(const std::vector<std::string> &env);
-    void add_bind(const Bind &bind);
-    void clear_binds();
+//    void set_env(const std::vector<std::string> &env);
+    std::vector<BindRule> &get_binds();
+    const std::vector<BindRule> &get_binds() const;
 
     time_ms_t get_time_usage_ms() const;
+    void set_time_usage_ms(time_ms_t time_usage_ms);
     time_ms_t get_time_usage_sys_ms() const;
+    void set_time_usage_sys_ms(time_ms_t time_usage_sys_ms);
     time_ms_t get_time_usage_user_ms() const;
+    void set_time_usage_user_ms(time_ms_t time_usage_user_ms);
     time_ms_t get_wall_time_usage_ms() const;
+    void set_wall_time_usage_ms(time_ms_t wall_time_usage_ms);
     memory_kb_t get_memory_usage_kb() const;
+    void set_memory_usage_kb(memory_kb_t memory_usage_kb);
     bool is_time_limit_exceeded() const;
+    void set_time_limit_exceeded(bool time_limit_exceeded);
     bool is_wall_time_limit_exceeded() const;
+    void set_wall_time_limit_exceeded(bool wall_time_limit_exceeded);
     bool exited() const;
+    void set_exited(bool exited);
     int get_exit_code() const;
-    bool is_signaled() const;
+    void set_exit_code(int exit_code);
+    bool signaled() const;
+    void set_signaled(bool signaled);
     int get_term_signal() const;
+    void set_term_signal(int term_signal);
     bool is_oom_killed() const;
+    void set_oom_killed(bool oom_killed);
     bool is_memory_limit_hit() const;
+    void set_memory_limit_hit(bool memory_limit_hit);
+
+    template<class Writer>
+    void serialize_request(Writer &writer) const;
+
+    template<class Value>
+    void deserialize_request(const Value &value);
+
+    template<class Writer>
+    void serialize_response(Writer &writer) const;
+
+    template<class Value>
+    void deserialize_response(const Value &value);
 private:
     // parameters
     time_ms_t time_limit_ms_ = -1;
@@ -166,7 +194,7 @@ private:
     StderrStream stderr_;
     std::vector<std::string> argv_;
     std::vector<std::string> env_;
-    std::vector<Bind> binds_;
+    std::vector<BindRule> binds_;
 
     // results
     time_ms_t time_usage_ms_ = 0;
@@ -183,211 +211,9 @@ private:
     int term_signal_ = -1;
     bool oom_killed_ = false;
     bool memory_limit_hit_ = false;
-
-    nlohmann::json serialize_parameters();
-    void deserialize_results(const nlohmann::json &json_results);
-
-    friend int run(const std::vector<Task *> &, const std::string &);
 };
 
-void Task::set_time_limit_ms(time_ms_t time_limit_ms) {
-    time_limit_ms_ = time_limit_ms;
-}
-
-void Task::set_wall_time_limit_ms(time_ms_t wall_time_limit_ms) {
-    wall_time_limit_ms_ = wall_time_limit_ms;
-}
-
-void Task::set_memory_limit_kb(memory_kb_t memory_limit_kb) {
-    memory_limit_kb_ = memory_limit_kb;
-}
-
-void Task::set_fsize_limit_kb(memory_kb_t fsize_limit_kb) {
-    fsize_limit_kb_ = fsize_limit_kb;
-}
-
-void Task::set_max_files(int32_t max_files) {
-    max_files_ = max_files;
-}
-
-void Task::set_max_threads(int32_t max_threads) {
-    max_threads_ = max_threads;
-}
-
-void Task::set_need_ipc(bool need_ipc) {
-    need_ipc_ = need_ipc;
-}
-
-void Task::set_use_standard_binds(bool use_standard_binds) {
-    use_standard_binds_ = use_standard_binds;
-}
-
-Stream &Task::get_stdin() {
-    return stdin_;
-}
-
-Stream &Task::get_stdout() {
-    return stdout_;
-}
-
-StderrStream &Task::get_stderr() {
-    return stderr_;
-}
-
-void Task::set_argv(const std::vector<std::string> &argv) {
-    argv_ = argv;
-}
-
-void Task::set_env(const std::vector<std::string> &env) {
-    env_ = env;
-}
-
-void Task::add_bind(const Bind &bind) {
-    binds_.push_back(bind);
-}
-
-void Task::clear_binds() {
-    binds_.clear();
-}
-
-time_ms_t Task::get_time_usage_ms() const {
-    return time_usage_ms_;
-}
-
-time_ms_t Task::get_time_usage_sys_ms() const {
-    return time_usage_sys_ms_;
-}
-
-time_ms_t Task::get_time_usage_user_ms() const {
-    return time_usage_user_ms_;
-}
-
-time_ms_t Task::get_wall_time_usage_ms() const {
-    return wall_time_usage_ms_;
-}
-
-memory_kb_t Task::get_memory_usage_kb() const {
-    return memory_usage_kb_;
-}
-
-bool Task::is_time_limit_exceeded() const {
-    return time_limit_exceeded_;
-}
-
-bool Task::is_wall_time_limit_exceeded() const {
-    return wall_time_limit_exceeded_;
-}
-
-bool Task::exited() const {
-    return exited_;
-}
-
-int Task::get_exit_code() const {
-    return exit_code_;
-}
-
-bool Task::is_signaled() const {
-    return signaled_;
-}
-
-int Task::get_term_signal() const {
-    return term_signal_;
-}
-
-bool Task::is_oom_killed() const {
-    return oom_killed_;
-}
-
-bool Task::is_memory_limit_hit() const {
-    return memory_limit_hit_;
-}
-
-nlohmann::json Task::serialize_parameters() {
-    return {
-        {"time_limit_ms", time_limit_ms_},
-        {"wall_time_limit_ms", wall_time_limit_ms_},
-        {"memory_limit_kb", memory_limit_kb_},
-        {"fsize_limit_kb", fsize_limit_kb_},
-        {"max_files", max_files_},
-        {"max_threads", max_threads_},
-        {"ipc", need_ipc_},
-        {"standard_binds", use_standard_binds_},
-        {"stdin", stdin_.filename_},
-        {"stdout", stdout_.filename_},
-        {"stderr", stderr_.filename_},
-        {"argv", argv_},
-        {"env", env_},
-        {"binds", binds_}
-    };
-}
-
-void Task::deserialize_results(const nlohmann::json &json_results) {
-    time_usage_ms_ = json_results.at("time_usage_ms");
-    time_usage_sys_ms_ = json_results.at("time_usage_sys_ms");
-    time_usage_user_ms_ = json_results.at("time_usage_user_ms");
-    wall_time_usage_ms_ = json_results.at("wall_time_usage_ms");
-    memory_usage_kb_ = json_results.at("memory_usage_kb");
-    time_limit_exceeded_ = json_results.at("time_limit_exceeded");
-    wall_time_limit_exceeded_ = json_results.at("wall_time_limit_exceeded");
-    exited_ = json_results.at("exited");
-    exit_code_ = json_results.at("exit_code");
-    signaled_ = json_results.at("signaled");
-    term_signal_ = json_results.at("term_signal");
-    oom_killed_ = json_results.at("oom_killed");
-    memory_limit_hit_ = json_results.at("memory_limit_hit");
-}
-
-inline int run(const std::vector<Task *> &tasks, const std::string &socket_path = "/etc/libsboxd/socket") {
-    nlohmann::json json_tasks = nlohmann::json::array();
-    for (auto task : tasks) {
-        json_tasks.push_back(task->serialize_parameters());
-    }
-
-    std::string msg = nlohmann::json::object({{"tasks", json_tasks}}).dump();
-
-    fd_t socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (socket_fd < 0) {
-        return socket_fd;
-    }
-
-    std::shared_ptr<fd_t> ptr(&socket_fd, [](const fd_t *fd) { close(*fd); });
-
-    sockaddr_un addr{};
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, socket_path.c_str(), std::min(sizeof(addr.sun_path) - 1, socket_path.size()));
-
-    int status = connect(socket_fd, reinterpret_cast<const struct sockaddr *>(&addr), sizeof(struct sockaddr_un));
-    if (status != 0) {
-        return status;
-    }
-
-    int cnt = send(socket_fd, msg.c_str(), msg.size() + 1, 0);
-    if (cnt < 0 || static_cast<size_t>(cnt) != msg.size() + 1) {
-        return cnt;
-    }
-
-    std::string res;
-    char buf[1024];
-    while (true) {
-        cnt = recv(socket_fd, buf, 1023, 0);
-        if (cnt < 0) {
-            return cnt;
-        }
-        if (cnt == 0) {
-            break;
-        }
-        buf[cnt] = 0;
-        res += buf;
-    }
-
-    nlohmann::json json_result = nlohmann::json::parse(res);
-
-    for (size_t i = 0; i < tasks.size(); ++i) {
-        tasks[i]->deserialize_results(json_result.at("tasks").at(i));
-    }
-
-    return 0;
-}
+void run(const std::vector<Task *> &, const std::string &socket_path = "/etc/libsboxd/socket");
 
 } // namespace libsbox
 

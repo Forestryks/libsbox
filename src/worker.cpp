@@ -11,6 +11,10 @@
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 Worker *Worker::worker_ = nullptr;
 
@@ -117,75 +121,80 @@ void Worker::serve() {
 }
 
 std::string Worker::process(const std::string &request) {
-    nlohmann::json json_request = parse_json(request);
+    parse_json(request);
 
-    prepare_containers(json_request);
+    prepare_containers();
     // To start execution we must wait for worker + all containers + all slaves
     run_start_barrier_.reset(containers_.size() * 2 + 1);
-    write_tasks(json_request);
+    write_tasks();
     run_tasks();
     close_pipes();
 
     return collect_results();
 }
 
-nlohmann::json Worker::parse_json(const std::string &request) {
-    nlohmann::json json_object;
-    try {
-        json_object = nlohmann::json::parse(request);
-    } catch (nlohmann::json::exception &e) {
-        die(format("Failed to parse json: %s", e.what()));
-    }
-    return json_object;
-}
+void Worker::parse_json(const std::string &request) {
+    rapidjson::Document document;
+    document.Parse(request.c_str());
 
-void Worker::prepare_containers(const nlohmann::json &json_request) {
-    if (!json_request.is_object()) {
-        die(format("Received json is not an object"));
+    if (document.HasParseError()) {
+        die(format(
+            "Failed to parse JSON: %s (at %zi)",
+            GetParseError_En(document.GetParseError()),
+            document.GetErrorOffset()
+        ));
     }
 
-    try {
-        const nlohmann::json &json_tasks = json_request.at("tasks");
-        size_t next_persistent_container = 0;
-        for (const auto &json_task : json_tasks) {
-            bool persistence_allowed = true;
-            if (json_task.at("ipc").get<bool>() || !json_task.at("standard_binds").get<bool>()) {
-                persistence_allowed = false;
-            }
+    if (!document.HasMember("tasks")) {
+        die("Request JSON has no 'tasks' field");
+    }
 
-            Container *created_container = nullptr;
-            if (persistence_allowed) {
-                if (next_persistent_container == persistent_containers_.size()) {
-                    created_container = new Container(id_getter_->get(), true);
-                    persistent_containers_.emplace_back(created_container);
-                }
-                containers_.push_back(persistent_containers_[next_persistent_container].get());
-                next_persistent_container++;
-            } else {
-                created_container = new Container(id_getter_->get(), false);
-                temporary_containers_.emplace_back(created_container);
-                containers_.push_back(created_container);
-            }
+    if (!document["tasks"].IsArray()) {
+        die("'tasks' is not array in request JSON");
+    }
 
-            if (created_container != nullptr) {
-                if (created_container->start() < 0) {
-                    die(format("Cannot start() container: %m"));
-                }
-            }
-        }
-    } catch (const nlohmann::json::exception &e) {
-        die(format("Failed to parse request: %s", e.what()));
+    assert(tasks_.empty());
+
+    for (const auto &json_task : document["tasks"].GetArray()) {
+        libsbox::Task *task = new libsbox::Task();
+        task->deserialize_request(json_task);
+        tasks_.push_back(task);
     }
 }
 
-void Worker::write_tasks(const nlohmann::json &json_request) {
-    try {
-        const nlohmann::json &json_tasks = json_request.at("tasks");
-        for (size_t i = 0; i < json_tasks.size(); ++i) {
-            containers_[i]->parse_task_from_json(json_tasks[i]);
+void Worker::prepare_containers() {
+    size_t next_permanent_container = 0;
+    for (auto task : tasks_) {
+        bool permanent_container_allowed = true;
+        if (task->get_need_ipc() || !task->get_use_standard_binds()) {
+            permanent_container_allowed = false;
         }
-    } catch (const nlohmann::json::exception &e) {
-        die(format("Failed to parse request: %s", e.what()));
+
+        Container *created_container = nullptr;
+        if (permanent_container_allowed) {
+            if (next_permanent_container == permanent_containers_.size()) {
+                created_container = new Container(id_getter_->get(), true);
+                permanent_containers_.emplace_back(created_container);
+            }
+            containers_.push_back(permanent_containers_[next_permanent_container].get());
+            next_permanent_container++;
+        } else {
+            created_container = new Container(id_getter_->get(), false);
+            temporary_containers_.emplace_back(created_container);
+            containers_.push_back(created_container);
+        }
+
+        if (created_container != nullptr) {
+            if (created_container->start() < 0) {
+                die(format("Cannot start() container: %m"));
+            }
+        }
+    }
+}
+
+void Worker::write_tasks() {
+    for (size_t i = 0; i < tasks_.size(); ++i) {
+        containers_[i]->set_task(tasks_[i]);
     }
 }
 
@@ -199,20 +208,26 @@ void Worker::run_tasks() {
 }
 
 std::string Worker::collect_results() {
-    std::string result;
-    nlohmann::json json_result;
-    try {
-        json_result["tasks"] = nlohmann::json::array();
-        // Containers will wait() on their barriers when results are ready
-        for (auto *container : containers_) {
-            container->get_barrier()->wait();
-            json_result["tasks"].push_back(container->results_to_json());
-        }
-
-        result = json_result.dump();
-    } catch (nlohmann::json::exception &e) {
-        die(format("Failed to serialize results: %s", e.what()));
+    for (size_t i = 0; i < tasks_.size(); ++i) {
+        containers_[i]->get_barrier()->wait();
+        containers_[i]->put_results(tasks_[i]);
     }
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+
+    writer.StartObject();
+    writer.Key("tasks");
+    writer.StartArray();
+    for (auto task : tasks_) {
+        task->serialize_response(writer);
+        delete task;
+    }
+    writer.EndArray();
+    writer.EndObject();
+    tasks_.clear();
+
+    std::string result = buffer.GetString();
 
     for (auto &container : temporary_containers_) {
         id_getter_->put(container->get_id());

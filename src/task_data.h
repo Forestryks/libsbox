@@ -8,7 +8,7 @@
 #include "plain_string.h"
 #include "plain_vector.h"
 #include "plain_string_vector.h"
-#include "defines.h"
+#include "libsbox_internal.h"
 #include "context_manager.h"
 #include "utils.h"
 
@@ -44,8 +44,8 @@ struct TaskData {
     memory_kb_t fsize_limit_kb = -1;
     int32_t max_files = 16;
     int32_t max_threads = 1;
-    bool ipc = false;
-    bool standard_binds = true;
+    bool need_ipc = false;
+    bool use_standard_binds = true;
 
     IOStream stdin_desc, stdout_desc, stderr_desc;
     PlainStringVector<ARGC_MAX, ARGV_MAX> argv;

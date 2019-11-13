@@ -37,12 +37,12 @@ script:
   - make
   - yes | sudo make install
 
-  # Some testing 
-  - sudo libsboxd &
+
   - cd ../testing
   - make
+  - sudo libsboxd start &
   - sudo time ./client 1000
-  - kill -SIGSTOP %1
+  - sudo libsboxd stop
   - wait
 
   # Running tests

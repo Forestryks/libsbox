@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <linux/limits.h>
 
 #include <libsbox.h>
 
@@ -22,10 +23,17 @@ void massert_internal(bool cond, int line, const char *msg) {
 
 #define massert(cond) massert_internal(cond, __LINE__, #cond)
 
+std::string get_cwd() {
+    char buf[PATH_MAX];
+    massert(getcwd(buf, PATH_MAX) == buf);
+    return buf;
+}
+
 void run() {
+    std::string cwd = get_cwd();
     libsbox::Task task;
     task.set_time_limit_ms(1000);
-    task.set_argv({"/home/forestryks/Projects/libsbox/testing/test", "hello"});
+    task.set_argv({cwd + "/test", "hello"});
     task.set_time_limit_ms(1000);
     task.set_wall_time_limit_ms(1000);
     task.set_memory_limit_kb(262144);
@@ -37,7 +45,7 @@ void run() {
     task.get_stderr().disable();
     task.set_need_ipc(false);
     task.set_use_standard_binds(true);
-    task.get_binds().emplace_back(".", "/home/forestryks/Projects/libsbox/testing/work").allow_write();
+    task.get_binds().emplace_back(".", cwd + "/work").allow_write();
 
     libsbox::run({&task});
     if (libsbox::error) {

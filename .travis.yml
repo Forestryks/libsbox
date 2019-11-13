@@ -43,6 +43,7 @@ script:
   - make
   - sudo time ./client 1000
   - kill -SIGSTOP %1
+  - wait
 
   # Running tests
   # - sudo swapoff -a

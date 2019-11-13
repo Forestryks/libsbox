@@ -40,10 +40,7 @@ script:
 
   - cd ../testing
   - make
-  - sudo libsboxd start &
-  - sudo time ./client 1000
-  - sudo libsboxd stop
-  - wait
+  - sudo ./testrun.sh
 
   # Running tests
   # - sudo swapoff -a

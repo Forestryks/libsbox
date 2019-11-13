@@ -35,6 +35,11 @@ add_library(
     libsbox.cpp utils.cpp context_manager.cpp
 )
 
+target_compile_options(
+    sbox
+    PUBLIC -fPIC
+)
+
 install(
     TARGETS sbox
     DESTINATION lib

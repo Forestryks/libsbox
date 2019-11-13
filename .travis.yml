@@ -35,7 +35,7 @@ script:
   - cd build
   - cmake ..
   - make
-  - yes sudo make install
+  - yes | sudo make install
 
   # Some testing 
   - sudo libsboxd &

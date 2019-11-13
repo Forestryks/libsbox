@@ -32,7 +32,6 @@ std::string get_cwd() {
 void run() {
     std::string cwd = get_cwd();
     libsbox::Task task;
-    task.set_time_limit_ms(1000);
     task.set_argv({cwd + "/test", "hello"});
     task.set_time_limit_ms(1000);
     task.set_wall_time_limit_ms(1000);
@@ -58,6 +57,8 @@ void run() {
     std::cout << "time_usage_sys_ms: " << task.get_time_usage_sys_ms() << std::endl;
     std::cout << "wall_time_usage_ms: " << task.get_wall_time_usage_ms() << std::endl;
     std::cout << "memory_usage_kb: " << task.get_memory_usage_kb() << std::endl;
+    std::cout << "time_limit_exceeded? " << task.is_time_limit_exceeded() << std::endl;
+    std::cout << "wall_time_limit_exceeded? " << task.is_wall_time_limit_exceeded() << std::endl;
     std::cout << "exited?: " << task.exited() << std::endl;
     std::cout << "exit_code: " << task.get_exit_code() << std::endl;
     std::cout << "signaled?: " << task.signaled() << std::endl;

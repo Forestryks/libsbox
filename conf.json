@@ -4,5 +4,5 @@
   "box_dir": "/var/libsboxd/box",
   "first_uid": 5678,
   "cgroup_root": "/sys/fs/cgroup/",
-  "timer_interval_ms": 50
+  "timer_interval_ms": 20
 }

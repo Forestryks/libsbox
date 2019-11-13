@@ -357,7 +357,7 @@ void Container::wait_for_slave() {
                 break;
             }
 
-            if (task_data_->wall_time_usage_ms != -1 && get_wall_clock_ms() > task_data_->wall_time_limit_ms) {
+            if (task_data_->wall_time_limit_ms != -1 && get_wall_clock_ms() > task_data_->wall_time_limit_ms) {
                 kill_all();
                 break;
             }
@@ -401,9 +401,11 @@ void Container::wait_for_slave() {
 }
 
 void Container::kill_all() {
+    stop_timer();
     if (kill(-1, SIGKILL) != 0 && errno != ESRCH) {
         die(format("Failed to kill all processes in box: %m"));
     }
+    set_standard_handler_restart(SIGALRM, true);
     while (true) {
         int status;
         pid_t pid = wait(&status);
@@ -414,6 +416,7 @@ void Container::kill_all() {
             die(format("kill_all() wait() failed: %m"));
         }
     }
+    set_standard_handler_restart(SIGALRM, false);
 }
 
 void Container::reset_wall_clock() {

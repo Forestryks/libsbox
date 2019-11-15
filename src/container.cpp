@@ -470,7 +470,7 @@ bool Container::is_memory_limit_hit() {
 }
 
 void Container::freopen_fds() {
-    if (task_data_->stdin_desc.filename.empty()) {
+    if (!task_data_->stdin_desc.filename.empty()) {
         task_data_->stdin_desc.fd = open(task_data_->stdin_desc.filename.c_str(), O_RDONLY);
         if (task_data_->stdin_desc.fd < 0) {
             die(format("Cannot open '%s': %m", task_data_->stdin_desc.filename.c_str()));
@@ -610,6 +610,7 @@ void Container::slave() {
         die(format("chdir() failed: %m"));
     }
 
+    // TODO: move after chroot
     freopen_fds();
     dup2_fds();
     close_all_fds();

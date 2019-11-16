@@ -6,13 +6,13 @@ all: client test
 .PHONY: clean
 
 clean:
-	rm -f client test
+	rm -f client work/test
 
 client: client.cpp
 	g++ $(CXXFLAGS) -o client client.cpp -lsbox
 
 test: test.cpp
-	g++ $(CXXFLAGS) -o test test.cpp
+	g++ $(CXXFLAGS) -o work/test test.cpp
 
 #CXX=clang++
 #CXXFLAGS=-g -std=c++11 -Wall -pedantic

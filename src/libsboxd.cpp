@@ -157,6 +157,7 @@
 // CLOSED(#37@forestryks): move shared structures to libraries
 // TODO(#38@forestryks): error handling in json (mb check schema first)
 // CLOSED(#39@forestryks): ignore inputs/outputs (/dev/null)
+// TODO(#40@forestryks): connection errors handling
 
 #include "daemon.h"
 

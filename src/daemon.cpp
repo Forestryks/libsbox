@@ -126,9 +126,6 @@ void Daemon::prepare() {
         die(format("Failed to close /run/libsboxd.pid: %m"));
     }
 
-    CgroupController::init("memory");
-    CgroupController::init("cpuacct");
-
     std::set_terminate(
         []() {
             die("Uncaught exception");
@@ -136,6 +133,29 @@ void Daemon::prepare() {
     );
 
     prepare_signals();
+
+    if (close(STDIN_FILENO) != 0) {
+        die(format("Failed to close stdin: %m"));
+    }
+    if (close(STDOUT_FILENO) != 0) {
+        die(format("Failed to close stdout: %m"));
+    }
+    if (close(STDERR_FILENO) != 0) {
+        die(format("Failed to close stderr: %m"));
+    }
+
+    if (open("/dev/null", O_RDONLY) != STDIN_FILENO) {
+        die(format("Failed to open '/dev/null' for stdin: %m"));
+    }
+    if (open("/dev/null", O_WRONLY) != STDOUT_FILENO) {
+        die(format("Failed to open '/dev/null' for stdout: %m"));
+    }
+    if (open("/dev/null", O_WRONLY) != STDERR_FILENO) {
+        die(format("Failed to open '/dev/null' for stderr: %m"));
+    }
+
+    CgroupController::init("memory");
+    CgroupController::init("cpuacct");
 
     socket_path_ = Config::get().get_socket_path();
 

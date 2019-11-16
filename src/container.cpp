@@ -277,11 +277,6 @@ void Container::prepare() {
     if (prctl(PR_SET_PDEATHSIG, SIGKILL) != 0) {
         die(format("Cannot set parent death signal: %m"));
     }
-    // TODO: very stupid bug
-    // To prevent race condition
-    if (getppid() == 0) {
-        raise(SIGKILL);
-    }
 
     reset_signals();
     enable_timer_interrupts();
@@ -304,9 +299,11 @@ void Container::prepare_root() {
         die(format("Cannot create root directory (%s): %m", root_.c_str()));
     }
 
-    // TODO: limit size
-    if (mount("none", root_.c_str(), "tmpfs", 0, "mode=755") != 0) {
+    if (mount("none", root_.c_str(), "tmpfs", 0, "mode=755,size=1g") != 0) {
         die(format("Cannot mount root tmpfs: %m"));
+    }
+    if (mount("none", root_.c_str(), "tmpfs", MS_REMOUNT, "mode=755,size=1g") != 0) {
+        die(format("Cannot remount root tmpfs: %m"));
     }
 
     fs::path proc_dir = root_ / "proc";
@@ -469,7 +466,7 @@ bool Container::is_memory_limit_hit() {
     return stoll(data);
 }
 
-void Container::freopen_fds() {
+void Container::open_files() {
     if (!task_data_->stdin_desc.filename.empty()) {
         task_data_->stdin_desc.fd = open(task_data_->stdin_desc.filename.c_str(), O_RDONLY);
         if (task_data_->stdin_desc.fd < 0) {
@@ -494,16 +491,6 @@ void Container::freopen_fds() {
 }
 
 void Container::dup2_fds() {
-    if (close(STDIN_FILENO) != 0) {
-        die(format("Cannot close stdin: %m"));
-    }
-    if (close(STDOUT_FILENO) != 0) {
-        die(format("Cannot close stdout: %m"));
-    }
-    if (close(STDERR_FILENO) != 0) {
-        die(format("Cannot close stderr: %m"));
-    }
-
     if (task_data_->stdin_desc.fd != -1) {
         if (dup2(task_data_->stdin_desc.fd, STDIN_FILENO) != STDIN_FILENO) {
             die(format("Cannot dup2 stdin: %m"));
@@ -539,7 +526,7 @@ void Container::close_all_fds() {
         fd_t fd = strtol(dentry->d_name, &end, 10);
         if (*end) continue;
 
-        if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO || fd == dir_fd || fd == exec_fd_
+        if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO || fd == dir_fd
             || fd == Logger::get().get_fd())
             continue;
         if (close(fd) != 0) {
@@ -597,38 +584,28 @@ void Container::setup_credentials() {
 void Container::slave() {
     ContextManager::set(this, "slave");
     reset_sigchld();
-    fs::path executable = task_data_->argv[0];
-    if (!executable.is_absolute()) {
-        die(format("%s is not absolute path", executable.c_str()));
-    }
-    exec_fd_ = open(executable.c_str(), O_RDONLY | O_CLOEXEC);
-    if (exec_fd_ < 0) {
-        die(format("Cannot open target executable '%s': %m", executable.c_str()));
-    }
-
-    if (chdir(work_dir_.c_str()) != 0) {
-        die(format("chdir() failed: %m"));
-    }
-
-    // TODO: move after chroot
-    freopen_fds();
-    dup2_fds();
-    close_all_fds();
 
     Worker::get().get_run_start_barrier()->wait();
     task_data_->error = false;
 
     memory_controller_->enter();
     cpuacct_controller_->enter();
-    setup_rlimits();
 
-    if (chroot("..") != 0) {
+    if (chdir(work_dir_.c_str()) != 0) {
+        die(format("chdir() failed: %m"));
+    }
+
+    if (chroot(root_.c_str()) != 0) {
         die(format("chroot() failed: %m"));
     }
 
+    open_files();
+    dup2_fds();
+    close_all_fds();
+    setup_rlimits();
     setup_credentials();
 
-    fexecve(exec_fd_, task_data_->argv.get(), task_data_->env.get());
+    execvpe(task_data_->argv[0], task_data_->argv.get(), task_data_->env.get());
     die(format("Failed to exec target: %m"));
     _exit(-1); // we should not get here
 }

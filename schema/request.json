@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "definitions": {
+    "stream" : {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "required": [
+    "tasks"
+  ],
+  "properties": {
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "argv",
+          "time_limit_ms",
+          "wall_time_limit_ms",
+          "memory_limit_kb",
+          "fsize_limit_kb",
+          "max_files",
+          "max_threads",
+          "stdin",
+          "stdout",
+          "stderr",
+          "need_ipc",
+          "use_standard_binds",
+          "binds"
+        ],
+        "properties": {
+          "argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "time_limit_ms": {
+            "type": "integer"
+          },
+          "wall_time_limit_ms": {
+            "type": "integer"
+          },
+          "memory_limit_kb": {
+            "type": "integer"
+          },
+          "fsize_limit_kb": {
+            "type": "integer"
+          },
+          "max_files": {
+            "type": "integer"
+          },
+          "max_threads": {
+            "type": "integer"
+          },
+          "stdin": {
+            "$ref": "#/definitions/stream"
+          },
+          "stdout": {
+            "$ref": "#/definitions/stream"
+          },
+          "stderr": {
+            "$ref": "#/definitions/stream"
+          },
+          "ipc": {
+            "type": "boolean"
+          },
+          "standard_binds": {
+            "type": "boolean"
+          },
+          "binds": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "inside",
+                "outside",
+                "flags"
+              ],
+              "properties": {
+                "inside": {
+                  "type": "string"
+                },
+                "outside": {
+                  "type": "string"
+                },
+                "flags": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -68,11 +68,9 @@ private:
     bool is_oom_killed();
     bool is_memory_limit_hit();
 
-    fd_t exec_fd_ = -1;
-
     [[noreturn]]
     void slave();
-    void freopen_fds();
+    void open_files();
     void dup2_fds();
     void close_all_fds();
     void setup_rlimits();

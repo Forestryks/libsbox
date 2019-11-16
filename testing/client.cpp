@@ -32,10 +32,10 @@ std::string get_cwd() {
 void run() {
     std::string cwd = get_cwd();
     libsbox::Task task;
-    task.set_argv({cwd + "/test", "hello"});
+    task.set_argv({"./test", "hello"});
     task.set_time_limit_ms(1000);
     task.set_wall_time_limit_ms(1000);
-    task.set_memory_limit_kb(262144);
+    task.set_memory_limit_kb(50000);
     task.set_fsize_limit_kb(262144);
     task.set_max_files(16);
     task.set_max_threads(1);

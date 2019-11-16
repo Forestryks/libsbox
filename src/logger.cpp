@@ -35,7 +35,7 @@ void Logger::_log(std::string msg) {
 }
 
 Logger::Logger() {
-    fd_ = dup3(STDERR_FILENO, 10, O_CLOEXEC);
+    fd_ = dup3(STDERR_FILENO, 107, O_CLOEXEC);
     if (fd_ < 0) {
         die(format("Logger dup3() failed: %m"));
     }

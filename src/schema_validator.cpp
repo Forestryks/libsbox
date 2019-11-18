@@ -36,14 +36,11 @@ SchemaValidator::SchemaValidator(const char *json_schema) {
     }
 }
 
-#include "logger.h"
-
 bool SchemaValidator::validate(const rapidjson::Document &document) {
     error_ = "";
     rapidjson::StringBuffer string_buffer1;
     rapidjson::PrettyWriter<rapidjson::StringBuffer> writer1(string_buffer1);
     document.Accept(writer1);
-    log(string_buffer1.GetString());
     schema_validator_->Reset();
     if (!document.Accept(*schema_validator_)) {
         rapidjson::StringBuffer string_buffer;

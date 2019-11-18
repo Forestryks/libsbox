@@ -335,8 +335,8 @@ void Task::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer)
     stderr_.serialize_request(writer);
     KEY("argv");
     ARRAY(argv_, STRING(it));
-    KEY("env");
-    ARRAY(env_, STRING(it));
+//    KEY("env");
+//    ARRAY(env_, STRING(it));
     KEY("binds");
     ARRAY(binds_, it.serialize_request(writer));
     writer.EndObject();
@@ -397,8 +397,12 @@ BindRule::BindRule(const rapidjson::Value &value) {
 
 template<>
 void Stream::deserialize_request(const rapidjson::Value &value) {
-    CHECK_TYPE(value, String);
-    GET(filename_, value, String);
+    if (value.IsNull()) {
+        filename_ = "";
+    } else {
+        CHECK_TYPE(value, String);
+        GET(filename_, value, String);
+    }
 }
 
 template<>
@@ -425,13 +429,13 @@ void Task::deserialize_request(const rapidjson::Value &value) {
         CHECK_TYPE(value["argv"][i], String);
         argv_.emplace_back(value["argv"][i].GetString());
     }
-    CHECK_MEMBER(value, "env");
-    CHECK_TYPE(value["env"], Array);
+//    CHECK_MEMBER(value, "env");
+//    CHECK_TYPE(value["env"], Array);
     env_.clear();
-    for (size_t i = 0; i < value["env"].Size(); ++i) {
-        CHECK_TYPE(value["env"][i], String);
-        env_.emplace_back(value["env"][i].GetString());
-    }
+//    for (size_t i = 0; i < value["env"].Size(); ++i) {
+//        CHECK_TYPE(value["env"][i], String);
+//        env_.emplace_back(value["env"][i].GetString());
+//    }
     CHECK_MEMBER(value, "binds");
     CHECK_TYPE(value["binds"], Array);
     binds_.clear();

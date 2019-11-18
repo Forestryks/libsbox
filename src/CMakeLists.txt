@@ -38,8 +38,8 @@ install(
 
 add_dependencies(libsboxd json_schemas)
 
-add_library(
-    sbox
+set(
+    LIBRARY_SOURCES
     libsbox.cpp
     utils.cpp
     context_manager.cpp
@@ -48,14 +48,41 @@ add_library(
     schema/generated/response_schema.c
 )
 
-add_dependencies(sbox json_schemas)
+add_library(
+    sbox-static
+    ${LIBRARY_SOURCES}
+)
+
+SET_TARGET_PROPERTIES(
+    sbox-static PROPERTIES
+    OUTPUT_NAME sbox CLEAN_DIRECT_OUTPUT 1
+)
+
+add_dependencies(sbox-static json_schemas)
+
+add_library(
+    sbox-shared SHARED
+    ${LIBRARY_SOURCES}
+)
+
+SET_TARGET_PROPERTIES(
+    sbox-shared PROPERTIES
+    OUTPUT_NAME sbox CLEAN_DIRECT_OUTPUT 1
+)
+
+add_dependencies(sbox-shared json_schemas)
 
 target_compile_options(
-    sbox
+    sbox-static
     PUBLIC -fPIC
 )
 
 install(
-    TARGETS sbox
+    TARGETS sbox-static
+    DESTINATION lib
+)
+
+install(
+    TARGETS sbox-shared
     DESTINATION lib
 )

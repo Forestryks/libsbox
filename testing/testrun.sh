@@ -8,5 +8,5 @@ trap finish EXIT
 
 libsboxd start &
 sleep 0.5
-time ./client 1000 || exit 1
+time ./client 10 || exit 1
 

@@ -9,6 +9,7 @@
 #include "shared_id_getter.h"
 #include "shared_barrier.h"
 #include "container.h"
+#include "schema_validator.h"
 
 #include <sys/signal.h>
 #include <map>
@@ -42,6 +43,7 @@ private:
     std::vector<std::unique_ptr<Container>> permanent_containers_;
     std::vector<std::unique_ptr<Container>> temporary_containers_;
     std::vector<Container *> containers_;
+    std::unique_ptr<SchemaValidator> request_validator_;
 
     std::map<std::string, std::pair<fd_t, fd_t>> pipes_;
     void close_pipes();
@@ -49,7 +51,7 @@ private:
     [[noreturn]]
     void serve();
     std::string process(const std::string &request);
-    void parse_json(const std::string &request);
+    Error parse_and_validate_json_request(const std::string &request);
     void prepare_containers();
     void write_tasks();
     void run_tasks();

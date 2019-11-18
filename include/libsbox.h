@@ -5,6 +5,8 @@
 #ifndef LIBSBOX_LIBSBOX_H
 #define LIBSBOX_LIBSBOX_H
 
+#include <libsbox/error.h>
+
 #include <string>
 #include <iostream>
 #include <sys/socket.h>
@@ -25,20 +27,6 @@ using memory_kb_t = int64_t;
 using fd_t = int;
 
 static const int unlimited = -1;
-
-class Error {
-public:
-    explicit Error(const std::string &msg);
-
-    explicit operator bool() const;
-    const std::string &get() const;
-    void set(const std::string &msg);
-
-private:
-    std::string error_;
-};
-
-extern Error error;
 
 class BindRule {
 public:
@@ -177,7 +165,7 @@ public:
     void serialize_response(Writer &writer) const;
 
     template<class Value>
-    void deserialize_response(const Value &value);
+    Error deserialize_response(const Value &value);
 private:
     // parameters
     time_ms_t time_limit_ms_ = -1;
@@ -213,7 +201,7 @@ private:
     bool memory_limit_hit_ = false;
 };
 
-void run(const std::vector<Task *> &, const std::string &socket_path = "/etc/libsboxd/socket");
+Error run_together(const std::vector<Task *> &tasks, const std::string &socket_path = "/etc/libsboxd/socket");
 
 } // namespace libsbox
 

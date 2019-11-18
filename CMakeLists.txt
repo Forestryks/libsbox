@@ -36,6 +36,16 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
     CACHE PATH "Library output"
     )
 
+set(
+    LIBSBOX_INCLUDE_DIR
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+set(
+    LIBSBOX_SOURCE_DIR
+    ${PROJECT_SOURCE_DIR}/src
+)
+
 set(RAPIDJSON_REPO_DIR "${PROJECT_BINARY_DIR}/rapidjson")
 if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/external/include/rapidjson)
     execute_process(COMMAND git clone --depth=1 https://github.com/Tencent/rapidjson.git ${RAPIDJSON_REPO_DIR}
@@ -47,6 +57,7 @@ endif ()
 include_directories(SYSTEM external/include)
 include_directories(include)
 
+add_subdirectory(schema)
 add_subdirectory(src)
 
 install(
@@ -57,5 +68,10 @@ install(
 
 install(
     FILES include/libsbox.h
+    DESTINATION include
+)
+
+install(
+    DIRECTORY include/libsbox
     DESTINATION include
 )

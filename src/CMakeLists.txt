@@ -1,7 +1,3 @@
-cmake_minimum_required(VERSION 3.10)
-set(CMAKE_CXX_STANDARD 17)
-project(libsbox)
-
 add_executable(
     libsboxd
     libsboxd.cpp
@@ -20,7 +16,11 @@ add_executable(
     container.cpp
     cgroup_controller.cpp
     bind.cpp
-    logger.cpp)
+    logger.cpp
+    generated/request_schema.c
+    generated/response_schema.c
+    schema_validator.cpp
+    error.cpp)
 
 target_link_libraries(libsboxd pthread)
 
@@ -30,10 +30,19 @@ install(
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ WORLD_READ
 )
 
+add_dependencies(libsboxd json_schemas)
+
 add_library(
     sbox
-    libsbox.cpp utils.cpp context_manager.cpp
+    libsbox.cpp
+    utils.cpp
+    context_manager.cpp
+    error.cpp
+    schema_validator.cpp
+    generated/response_schema.c
 )
+
+add_dependencies(sbox json_schemas)
 
 target_compile_options(
     sbox

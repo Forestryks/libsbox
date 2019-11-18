@@ -37,7 +37,6 @@ script:
   - make
   - yes | sudo make install
 
-
   - cd ../testing
   - make
   - sudo ./testrun.sh

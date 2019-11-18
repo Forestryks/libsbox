@@ -46,9 +46,9 @@ void run() {
     task.set_use_standard_binds(true);
     task.get_binds().emplace_back(".", cwd + "/work").allow_write();
 
-    libsbox::run({&task});
-    if (libsbox::error) {
-        std::cout << libsbox::error.get() << std::endl;
+    auto error = libsbox::run_together({&task});
+    if (error) {
+        std::cout << error.get() << std::endl;
         _exit(1);
     }
 

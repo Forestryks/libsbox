@@ -15,7 +15,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <iostream>
-#include <limits.h>
 
 Daemon *Daemon::daemon_ = nullptr;
 

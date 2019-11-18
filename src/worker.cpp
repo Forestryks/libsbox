@@ -5,7 +5,7 @@
 #include "worker.h"
 #include "daemon.h"
 #include "signals.h"
-#include "logger.h"
+#include "schema_validator.h"
 
 #include <unistd.h>
 #include <sys/prctl.h>
@@ -15,6 +15,9 @@
 #include <rapidjson/error/en.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+
+#include "logger.h"
+#include "generated/request_schema.h"
 
 Worker *Worker::worker_ = nullptr;
 
@@ -63,6 +66,11 @@ void Worker::serve() {
     // To prevent race condition
     if (getppid() == 0) {
         raise(SIGKILL);
+    }
+
+    request_validator_ = std::make_unique<SchemaValidator>(request_schema_data);
+    if (!request_validator_->get_error().empty()) {
+        die(request_validator_->get_error());
     }
 
     // We need check containers' exit codes asynchronously to avoid deadlocks
@@ -121,7 +129,16 @@ void Worker::serve() {
 }
 
 std::string Worker::process(const std::string &request) {
-    parse_json(request);
+    auto error = parse_and_validate_json_request(request);
+    if (error) {
+        rapidjson::StringBuffer string_buffer;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(string_buffer);
+        writer.StartObject();
+        writer.Key("error");
+        writer.String(error.get().c_str());
+        writer.EndObject();
+        return string_buffer.GetString();
+    }
 
     prepare_containers();
     // To start execution we must wait for worker + all containers + all slaves
@@ -133,24 +150,20 @@ std::string Worker::process(const std::string &request) {
     return collect_results();
 }
 
-void Worker::parse_json(const std::string &request) {
+Error Worker::parse_and_validate_json_request(const std::string &request) {
     rapidjson::Document document;
     document.Parse(request.c_str());
 
     if (document.HasParseError()) {
-        die(format(
-            "Failed to parse JSON: %s (at %zi)",
+        return Error(format(
+            "Request JSON incorrect: %s (at %zi)",
             GetParseError_En(document.GetParseError()),
             document.GetErrorOffset()
         ));
     }
 
-    if (!document.HasMember("tasks")) {
-        die("Request JSON has no 'tasks' field");
-    }
-
-    if (!document["tasks"].IsArray()) {
-        die("'tasks' is not array in request JSON");
+    if (!request_validator_->validate(document)) {
+        return Error(request_validator_->get_error());
     }
 
     assert(tasks_.empty());
@@ -160,6 +173,8 @@ void Worker::parse_json(const std::string &request) {
         task->deserialize_request(json_task);
         tasks_.push_back(task);
     }
+
+    return Error();
 }
 
 void Worker::prepare_containers() {

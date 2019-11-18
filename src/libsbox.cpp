@@ -4,6 +4,8 @@
 
 #include "utils.h"
 #include "context_manager.h"
+#include "schema_validator.h"
+#include "generated/response_schema.h"
 
 #include <libsbox.h>
 #include <rapidjson/writer.h>
@@ -13,24 +15,6 @@
 #include <rapidjson/error/en.h>
 
 using namespace libsbox;
-
-Error::Error(const std::string &msg) : error_(msg) {}
-
-Error::operator bool() const {
-    return !error_.empty();
-}
-
-const std::string &Error::get() const {
-    return error_;
-}
-
-void Error::set(const std::string &msg) {
-    if (error_.empty()) {
-        error_ = msg;
-    }
-}
-
-Error libsbox::error("");
 
 BindRule::BindRule(const std::string &inside, const std::string &outside)
     : inside_(inside), outside_(outside), flags_(0) {}
@@ -463,14 +447,14 @@ void Task::deserialize_request(const rapidjson::Value &value) {
 #undef GET
 #undef GET_MEMBER
 
-#define ERR() do { error.set("Response JSON is incorrect"); return; } while (0)
+#define ERR() do { return Error("Response JSON is incorrect"); } while (0)
 #define CHECK_MEMBER(obj, key) do { if (!obj.HasMember(key)) ERR(); } while (0)
 #define CHECK_TYPE(obj, type) do { if (!obj.Is##type()) ERR(); } while (0)
 #define GET(to, obj, type) do { CHECK_TYPE(obj, type); to = obj.Get##type(); } while (0)
 #define GET_MEMBER(to, obj, key, type) do { CHECK_MEMBER(obj, key); GET(to, obj[key], type); } while (0)
 
 template<>
-void Task::deserialize_response(const rapidjson::Value &value) {
+Error Task::deserialize_response(const rapidjson::Value &value) {
     CHECK_TYPE(value, Object);
     GET_MEMBER(time_usage_ms_, value, "time_usage_ms", Int64);
     GET_MEMBER(time_usage_sys_ms_, value, "time_usage_sys_ms", Int64);
@@ -485,6 +469,7 @@ void Task::deserialize_response(const rapidjson::Value &value) {
     GET_MEMBER(term_signal_, value, "term_signal", Int);
     GET_MEMBER(oom_killed_, value, "oom_killed", Bool);
     GET_MEMBER(memory_limit_hit_, value, "memory_limit_hit", Bool);
+    return Error();
 }
 
 #undef ERR
@@ -493,7 +478,7 @@ void Task::deserialize_response(const rapidjson::Value &value) {
 #undef GET
 #undef GET_MEMBER
 
-void libsbox::run(const std::vector<Task *> &tasks, const std::string &socket_path) {
+Error libsbox::run_together(const std::vector<Task *> &tasks, const std::string &socket_path) {
     rapidjson::StringBuffer buffer;
     rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
     writer.StartObject();
@@ -509,8 +494,7 @@ void libsbox::run(const std::vector<Task *> &tasks, const std::string &socket_pa
 
     fd_t socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (socket_fd < 0) {
-        error.set(format("Cannot create socket: %m"));
-        return;
+        return Error(format("Cannot create socket: %m"));
     }
 
     std::shared_ptr<fd_t> ptr(&socket_fd, [](const fd_t *fd) { close(*fd); });
@@ -521,14 +505,12 @@ void libsbox::run(const std::vector<Task *> &tasks, const std::string &socket_pa
 
     int status = connect(socket_fd, reinterpret_cast<const struct sockaddr *>(&addr), sizeof(struct sockaddr_un));
     if (status != 0) {
-        error.set(format("Cannot connect to socket: %m"));
-        return;
+        return Error(format("Cannot connect to socket: %m"));
     }
 
     int cnt = send(socket_fd, message.c_str(), message.size() + 1, 0);
     if (cnt < 0 || static_cast<size_t>(cnt) != message.size() + 1) {
-        error.set(format("Cannot send request: %m"));
-        return;
+        return Error(format("Cannot send request: %m"));
     }
 
     std::string res;
@@ -536,8 +518,7 @@ void libsbox::run(const std::vector<Task *> &tasks, const std::string &socket_pa
     while (true) {
         cnt = recv(socket_fd, buf, 1023, 0);
         if (cnt < 0) {
-            error.set(format("Cannot receive response: %m"));
-            return;
+            return Error(format("Cannot receive response: %m"));
         }
         if (cnt == 0) {
             break;
@@ -546,34 +527,40 @@ void libsbox::run(const std::vector<Task *> &tasks, const std::string &socket_pa
         res += buf;
     }
 
+    static SchemaValidator response_validator(response_schema_data);
+    if (!response_validator.get_error().empty()) {
+        return Error(response_validator.get_error());
+    }
+
     rapidjson::Document document;
     if (document.Parse(res.c_str()).HasParseError()) {
-        error.set(
+        return Error(
             format(
                 "Cannot parse response (offset %zi): %s",
                 document.GetErrorOffset(),
                 rapidjson::GetParseError_En(document.GetParseError())
             )
         );
-        return;
     }
 
-    if (!document.IsObject()) {
-        error.set("Response is not JSON object");
-        return;
+    if (!response_validator.validate(document)) {
+        return Error(response_validator.get_error());
     }
 
-    if (!document.HasMember("tasks") || !document["tasks"].IsArray()) {
-        error.set("Response JSON object has no member 'tasks' or 'tasks' is not array");
-        return;
+    if (document.HasMember("error") && document["error"].IsString()) {
+        return Error(format("[remote] %s", document["error"].GetString()));
     }
 
     if (document["tasks"].GetArray().Size() != tasks.size()) {
-        error.set("Response JSON object 'tasks' array size is not equal to tasks count");
-        return;
+        return Error("Response JSON object 'tasks' array size is not equal to tasks count");
     }
 
     for (size_t i = 0; i < tasks.size(); ++i) {
-        tasks[i]->deserialize_response(document["tasks"][i]);
+        auto error = tasks[i]->deserialize_response(document["tasks"][i]);
+        if (error) {
+            return error;
+        }
     }
+
+    return Error();
 }

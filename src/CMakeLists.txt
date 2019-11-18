@@ -1,3 +1,9 @@
+add_subdirectory(schema)
+
+set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/schema/generated/request_schema.c PROPERTY GENERATED 1)
+set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/schema/generated/response_schema.c PROPERTY GENERATED 1)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/schema/)
+
 add_executable(
     libsboxd
     libsboxd.cpp
@@ -17,8 +23,8 @@ add_executable(
     cgroup_controller.cpp
     bind.cpp
     logger.cpp
-    generated/request_schema.c
-    generated/response_schema.c
+    schema/generated/request_schema.c
+    schema/generated/response_schema.c
     schema_validator.cpp
     error.cpp)
 
@@ -39,7 +45,7 @@ add_library(
     context_manager.cpp
     error.cpp
     schema_validator.cpp
-    generated/response_schema.c
+    schema/generated/response_schema.c
 )
 
 add_dependencies(sbox json_schemas)

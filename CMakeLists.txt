@@ -57,7 +57,6 @@ endif ()
 include_directories(SYSTEM external/include)
 include_directories(include)
 
-add_subdirectory(schema)
 add_subdirectory(src)
 
 install(

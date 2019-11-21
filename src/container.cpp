@@ -527,7 +527,8 @@ void Container::close_all_fds() {
         if (*end) continue;
 
         if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO || fd == dir_fd
-            || fd == Logger::get().get_fd())
+            || fd == Logger::get().get_fd() || fd == memory_controller_->get_enter_fd()
+            || fd == cpuacct_controller_->get_enter_fd())
             continue;
         if (close(fd) != 0) {
             die(format("Cannot close fd %d: %m", fd));
@@ -588,8 +589,8 @@ void Container::slave() {
     Worker::get().get_run_start_barrier()->wait();
     task_data_->error = false;
 
-    memory_controller_->enter();
-    cpuacct_controller_->enter();
+    memory_controller_->delay_enter();
+    cpuacct_controller_->delay_enter();
 
     if (chdir(work_dir_.c_str()) != 0) {
         die(format("chdir() failed: %m"));
@@ -604,6 +605,9 @@ void Container::slave() {
     close_all_fds();
     setup_rlimits();
     setup_credentials();
+
+    memory_controller_->enter();
+    cpuacct_controller_->enter();
 
     execvpe(task_data_->argv[0], task_data_->argv.get(), task_data_->env.get());
     die(format("Failed to exec target: %m"));

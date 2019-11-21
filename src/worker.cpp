@@ -3,7 +3,6 @@
  */
 
 #include "worker.h"
-#include "daemon.h"
 #include "signals.h"
 #include "schema_validator.h"
 

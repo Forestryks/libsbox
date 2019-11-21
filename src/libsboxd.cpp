@@ -158,6 +158,7 @@
 // CLOSED(#38@forestryks): error handling in json (mb check schema first)
 // CLOSED(#39@forestryks): ignore inputs/outputs (/dev/null)
 // TODO(#40@forestryks): connection errors handling
+// CLOSED(#41@forestryks): write cgroups immediately before exec
 
 #include "daemon.h"
 

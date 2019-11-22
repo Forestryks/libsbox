@@ -6,10 +6,12 @@
 #define LIBSBOX_ERROR_H
 
 #include <string>
+#include <system_error>
 
 class Error {
 public:
     Error() = default;
+    explicit Error(const std::error_code &ec);
     explicit Error(const std::string &msg);
 
     explicit operator bool() const;

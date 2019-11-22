@@ -38,6 +38,12 @@ void Daemon::terminate() {
 void Daemon::run() {
     daemon_ = this;
     ContextManager::set(this, "daemon");
+
+    const char *config_path = getenv("LIBSBOX_CONFIG");
+    if (config_path) {
+        Config::set_path(config_path);
+    }
+
     prepare();
 
     // Spawn workers

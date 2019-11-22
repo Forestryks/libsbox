@@ -13,7 +13,7 @@
 
 bool Config::loaded_ = false;
 Config Config::config_;
-const fs::path Config::path_ = "/etc/libsboxd/conf.json";
+fs::path Config::path_ = "/etc/libsboxd/conf.json";
 
 const Config &Config::get() {
     if (loaded_) return config_;
@@ -82,4 +82,8 @@ const fs::path &Config::get_cgroup_root() const {
 
 uint32_t Config::get_timer_interval_ms() const {
     return timer_interval_ms_;
+}
+
+void Config::set_path(const fs::path &path) {
+    path_ = path;
 }

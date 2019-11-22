@@ -159,7 +159,6 @@
 // CLOSED(#39@forestryks): ignore inputs/outputs (/dev/null)
 // TODO(#40@forestryks): connection errors handling
 // CLOSED(#41@forestryks): write cgroups immediately before exec
-// CLOSED(#42@forestryks): resolve path in library
 
 #include "daemon.h"
 

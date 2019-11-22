@@ -292,31 +292,24 @@ void Task::set_memory_limit_hit(bool memory_limit_hit) {
 #define ARRAY(var, statement) do { writer.StartArray(); for (const auto &it : var) {statement;} writer.EndArray(); } while (0)
 
 template<>
-Error BindRule::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer) const {
+void BindRule::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer) const {
     writer.StartObject();
-    std::error_code ec;
     KEY("inside");
-    STRING(fs::absolute(inside_, ec).string());
-    if (ec) return Error(ec);
+    STRING(inside_);
     KEY("outside");
-    STRING(fs::absolute(outside_, ec).string());
-    if (ec) return Error(ec);
+    STRING(outside_);
     KEY("flags");
     INT(flags_);
     writer.EndObject();
-    return Error();
 }
 
 template<>
-Error Stream::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer) const {
-    std::error_code ec;
-    STRING(fs::absolute(filename_, ec).string());
-    if (ec) return Error(ec);
-    return Error();
+void Stream::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer) const {
+    STRING(filename_);
 }
 
 template<>
-Error Task::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer) const {
+void Task::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer) const {
     writer.StartObject();
     KEY("time_limit_ms");
     INT64(time_limit_ms_);
@@ -335,27 +328,18 @@ Error Task::serialize_request(rapidjson::Writer<rapidjson::StringBuffer> &writer
     KEY("use_standard_binds");
     BOOL(use_standard_binds_);
     KEY("stdin");
-    auto error = stdin_.serialize_request(writer);
-    if (error) return error;
+    stdin_.serialize_request(writer);
     KEY("stdout");
-    error = stdout_.serialize_request(writer);
-    if (error) return error;
+    stdout_.serialize_request(writer);
     KEY("stderr");
-    error = stderr_.serialize_request(writer);
-    if (error) return error;
+    stderr_.serialize_request(writer);
     KEY("argv");
     ARRAY(argv_, STRING(it));
 //    KEY("env");
 //    ARRAY(env_, STRING(it));
     KEY("binds");
-    writer.StartArray();
-    for (const auto &it : binds_) {
-        error = it.serialize_request(writer);
-        if (error) return error;
-    }
-    writer.EndArray();
+    ARRAY(binds_, it.serialize_request(writer));
     writer.EndObject();
-    return Error();
 }
 
 template<>
@@ -505,10 +489,7 @@ Error libsbox::run_together(const std::vector<Task *> &tasks, const std::string 
     writer.Key("tasks");
     writer.StartArray();
     for (auto task : tasks) {
-        auto error = task->serialize_request(writer);
-        if (error) {
-            return error;
-        }
+        task->serialize_request(writer);
     }
     writer.EndArray();
     writer.EndObject();

@@ -6,8 +6,6 @@
 
 Error::Error(const std::string &msg) : error_(msg) {}
 
-Error::Error(const std::error_code &ec) : error_(ec.message()) {}
-
 Error::operator bool() const {
     return !error_.empty();
 }

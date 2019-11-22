@@ -56,7 +56,7 @@ private:
     int flags_;
 
     template<class Writer>
-    Error serialize_request(Writer &writer) const;
+    void serialize_request(Writer &writer) const;
     template<class Value>
     BindRule(const Value &value);
 
@@ -87,7 +87,7 @@ protected:
 
 private:
     template<class Writer>
-    Error serialize_request(Writer &writer) const;
+    void serialize_request(Writer &writer) const;
     template<class Value>
     void deserialize_request(const Value &value);
 
@@ -156,7 +156,7 @@ public:
     void set_memory_limit_hit(bool memory_limit_hit);
 
     template<class Writer>
-    Error serialize_request(Writer &writer) const;
+    void serialize_request(Writer &writer) const;
 
     template<class Value>
     void deserialize_request(const Value &value);

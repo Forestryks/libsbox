@@ -236,6 +236,7 @@ void Container::serve() {
 
         cpuacct_controller_ = new CgroupController("cpuacct", std::to_string(id_));
         memory_controller_ = new CgroupController("memory", std::to_string(id_));
+        memory_controller_->write("memory.swappiness", "0");
         if (task_data_->memory_limit_kb != -1) {
             memory_controller_->write("memory.limit_in_bytes", std::to_string(task_data_->memory_limit_kb) + "K");
         }

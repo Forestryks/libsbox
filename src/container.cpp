@@ -554,6 +554,7 @@ void Container::setup_rlimits() {
         set_rlimit(RLIMIT_FSIZE, static_cast<unsigned>(task_data_->fsize_limit_kb));
     }
 
+    set_rlimit(RLIMIT_CORE, 0);
     set_rlimit(RLIMIT_STACK, RLIM_INFINITY);
     set_rlimit(RLIMIT_NOFILE,
         (task_data_->max_files == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_files)));

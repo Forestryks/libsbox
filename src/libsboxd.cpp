@@ -159,6 +159,8 @@
 // CLOSED(#39@forestryks): ignore inputs/outputs (/dev/null)
 // TODO(#40@forestryks): connection errors handling
 // CLOSED(#41@forestryks): write cgroups immediately before exec
+// TODO(#42@forestryks): cleanup ipc
+// TODO(#43@forestryks): cleanup working directory
 
 #include "daemon.h"
 

@@ -7,6 +7,7 @@
 #include "utils.h"
 
 #include <sys/mount.h>
+#include <fcntl.h>
 
 Bind::Bind(fs::path inside, fs::path outside, int flags)
     : inside_(std::move(inside)), outside_(std::move(outside)), flags_(flags) {}
@@ -61,18 +62,32 @@ void Bind::mount(const fs::path &root_dir, const fs::path &work_dir) {
     if (fs::is_directory(from_, error)) {
         fs::create_directories(to_, error);
         if (error) {
-            if (optional) return;
-            die(format("Cannot create dir %s: %s", to_.c_str(), error.message().c_str()));
+            die(format("Cannot create dir %s for mount point: %s", to_.c_str(), error.message().c_str()));
         }
         if (::mount(from_.c_str(), to_.c_str(), "none", mount_flags, "") < 0) {
-            if (optional) return;
+            die(format("Cannot mount %s: %m", to_.c_str()));
+        }
+        mounted_ = true;
+    } else if (fs::is_regular_file(from_, error)) {
+        fs::create_directories(to_.parent_path(), error);
+        if (error) {
+            die(format("Cannot create dir %s: %s", from_.parent_path().c_str(), error.message().c_str()));
+        }
+        int fd = open(to_.c_str(), O_CREAT | O_WRONLY | O_TRUNC);
+        if (fd < 0) {
+            die(format("Cannot create file %s for mount point: %m", to_.c_str()));
+        }
+        if (close(fd) < 0) {
+            die(format("Cannot close file desctiptor: %m"));
+        }
+        if (::mount(from_.c_str(), to_.c_str(), "none", mount_flags, "") < 0) {
             die(format("Cannot mount %s: %m", to_.c_str()));
         }
         mounted_ = true;
     } else {
-        die(format("%s is not directory. Currently libsboxd supports only directories", to_.c_str()));
+        die(format("%s is not directory nor regular file", to_.c_str()));
     }
-    if (error && !optional) {
+    if (error) {
         die(format("Cannot stat %s: %s", from_.c_str(), error.message().c_str()));
     }
 }

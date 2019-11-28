@@ -610,7 +610,7 @@ void Container::slave() {
     cpuacct_controller_->enter();
 
     execvpe(task_data_->argv[0], task_data_->argv.get(), task_data_->env.get());
-    die(format("Failed to exec target: %m"));
+    die(format("Failed to execute command '%s': %m", task_data_->argv[0]));
     _exit(-1); // we should not get here
 }
 

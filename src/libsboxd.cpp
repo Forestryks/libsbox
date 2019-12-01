@@ -160,7 +160,7 @@
 // TODO(#40@forestryks): connection errors handling?
 // CLOSED(#41@forestryks): write cgroups immediately before exec
 // TODO(#42@forestryks): cleanup ipc?
-// TODO(#43@forestryks): cleanup working directory?
+// CLOSED(#43@forestryks): cleanup working directory?
 // TODO(#44@forestryks): use group for file permissions?
 // TODO(#45@forestryks): rewrite container?
 // CLOSED(#46@forestryks): environment and PATH

@@ -356,6 +356,13 @@ void Container::cleanup_root() {
             die(format("Cannot remove %s: %s", path.path().c_str(), error.message().c_str()));
         }
     }
+
+    for (const auto &path : fs::directory_iterator(work_dir_)) {
+        fs::remove_all(path, error);
+        if (error) {
+            die(format("Cannot remove %s: %s", path.path().c_str(), error.message().c_str()));
+        }
+    }
 }
 
 void Container::disable_ipcs() {

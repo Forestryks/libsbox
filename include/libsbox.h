@@ -17,10 +17,10 @@
 namespace libsbox {
 
 static const size_t ARGC_MAX = 128;
-static const size_t ENVC_MAX = 0;
+static const size_t ENVC_MAX = 1;
 static const size_t BINDS_MAX = 10;
 static const size_t ARGV_MAX = 4096;
-static const size_t ENV_MAX = 0;
+static const size_t ENV_MAX = 4096;
 
 using time_ms_t = int64_t;
 using memory_kb_t = int64_t;

@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <dirent.h>
+#include <sys/stat.h>
 
 Container *Container::container_ = nullptr;
 
@@ -267,6 +268,8 @@ void Container::serve() {
         barrier_.wait();
 
         if (!permanent_) break;
+
+        cleanup_root();
     }
 
     _exit(0);
@@ -297,7 +300,7 @@ void Container::prepare_root() {
     std::error_code error;
     fs::create_directories(root_, error);
     if (error) {
-        die(format("Cannot create root directory (%s): %m", root_.c_str()));
+        die(format("Cannot create root directory (%s): %s", root_.c_str(), error.message().c_str()));
     }
 
     if (mount("none", root_.c_str(), "tmpfs", 0, "mode=755,size=1g") != 0) {
@@ -322,11 +325,36 @@ void Container::prepare_root() {
     work_dir_ = root_ / "work";
     fs::create_directories(work_dir_, error);
     if (error) {
-        die(format("Cannot create '/work' dir: %m"));
+        die(format("Cannot create '/work' dir: %s", error.message().c_str()));
+    }
+
+    fs::create_directories(root_ / "tmp");
+    if (error) {
+        die(format("Cannot create '/tmp' dir: %s", error.message().c_str()));
+    }
+    if (chmod((root_ / "tmp").c_str(), 0777) != 0) {
+        die(format("Cannot chmod() '/tmp': %m"));
     }
 
     if (task_data_->use_standard_binds) {
         Bind::apply_standard_rules(root_, work_dir_);
+    }
+}
+
+void Container::cleanup_root() {
+    std::error_code error;
+    for (const auto &path : fs::directory_iterator(work_dir_)) {
+        fs::remove_all(path, error);
+        if (error) {
+            die(format("Cannot remove %s: %s", path.path().c_str(), error.message().c_str()));
+        }
+    }
+
+    for (const auto &path : fs::directory_iterator(root_ / "tmp")) {
+        fs::remove_all(path, error);
+        if (error) {
+            die(format("Cannot remove %s: %s", path.path().c_str(), error.message().c_str()));
+        }
     }
 }
 
@@ -610,6 +638,11 @@ void Container::slave() {
 
     memory_controller_->enter();
     cpuacct_controller_->enter();
+
+    char *path_env = getenv("PATH");
+    if (path_env != nullptr) {
+        task_data_->env.add(format("path=%s", path_env));
+    }
 
     execvpe(task_data_->argv[0], task_data_->argv.get(), task_data_->env.get());
     die(format("Failed to execute command '%s': %m", task_data_->argv[0]));

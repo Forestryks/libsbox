@@ -57,6 +57,7 @@ private:
     void prepare();
     void prepare_root();
     void disable_ipcs();
+    void cleanup_root();
     void wait_for_slave();
     void kill_all();
     void reset_wall_clock();

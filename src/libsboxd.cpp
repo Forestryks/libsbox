@@ -157,10 +157,15 @@
 // CLOSED(#37@forestryks): move shared structures to libraries
 // CLOSED(#38@forestryks): error handling in json (mb check schema first)
 // CLOSED(#39@forestryks): ignore inputs/outputs (/dev/null)
-// TODO(#40@forestryks): connection errors handling
+// TODO(#40@forestryks): connection errors handling?
 // CLOSED(#41@forestryks): write cgroups immediately before exec
-// TODO(#42@forestryks): cleanup ipc
-// TODO(#43@forestryks): cleanup working directory
+// TODO(#42@forestryks): cleanup ipc?
+// TODO(#43@forestryks): cleanup working directory?
+// TODO(#44@forestryks): use group for file permissions?
+// TODO(#45@forestryks): rewrite container?
+// CLOSED(#46@forestryks): environment and PATH
+// TODO(#47@forestryks): check credentials?
+// TODO(#47@forestryks): environment
 
 #include "daemon.h"
 

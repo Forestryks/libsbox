@@ -3,6 +3,9 @@ from sys import stdin, stdout
 from tests import tests
 from multiprocessing.dummy import Pool
 from threading import Lock
+import ctypes
+import signal
+import time
 
 
 class Color:
@@ -59,10 +62,23 @@ def run_test(test):
         test_failed(format_argv(test.argv), completed_process.stderr.decode())
 
 
+def set_pdeathsig(sig=signal.SIGKILL):
+    def ret():
+        libc = ctypes.CDLL("libc.so.6")
+        return libc.prctl(1, sig)
+    return ret
+
+
 def main():
+    libsboxd_process = subprocess.Popen(["libsboxd"], preexec_fn=lambda: set_pdeathsig())
+    time.sleep(0.5)
+    if libsboxd_process.poll() is not None:
+        exit(1)
+
     for test in tests:
         run_test(test)
 
 
 if __name__ == "__main__":
     main()
+

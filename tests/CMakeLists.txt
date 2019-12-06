@@ -30,5 +30,5 @@ add_custom_target(
 add_custom_target(
     test
     DEPENDS tests
-    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/run.py
+    COMMAND python3.8 ${CMAKE_CURRENT_SOURCE_DIR}/run.py
 )

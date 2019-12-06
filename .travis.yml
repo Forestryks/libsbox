@@ -3,9 +3,6 @@ sudo: required
 
 language: cpp
 
-python:
-  - 3.8
-
 os:
   - linux
 
@@ -24,6 +21,7 @@ addons:
       - cmake
       - gcc-9
       - g++-9
+      - python3.8
 
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi

@@ -20,23 +20,6 @@ set(
 )
 
 set(
-    CMAKE_LIBRARY_OUTPUT_DIRECTORY
-    ${PROJECT_BINARY_DIR}/bin
-    CACHE PATH "Binary output dir"
-)
-
-set(
-    CMAKE_RUNTIME_OUTPUT_DIRECTORY
-    ${PROJECT_BINARY_DIR}/bin
-    CACHE PATH "Binary output dir"
-)
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
-    ${PROJECT_BINARY_DIR}/lib
-    CACHE PATH "Library output"
-    )
-
-set(
     LIBSBOX_INCLUDE_DIR
     ${PROJECT_SOURCE_DIR}/include
 )
@@ -58,6 +41,7 @@ include_directories(SYSTEM external/include)
 include_directories(include)
 
 add_subdirectory(src)
+add_subdirectory(tests)
 
 install(
     CODE

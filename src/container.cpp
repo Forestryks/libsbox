@@ -592,8 +592,9 @@ void Container::setup_rlimits() {
 
     set_rlimit(RLIMIT_CORE, 0);
     set_rlimit(RLIMIT_STACK, RLIM_INFINITY);
-    set_rlimit(RLIMIT_NOFILE,
-        (task_data_->max_files == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_files)));
+    if (task_data_->max_files != -1) {
+        set_rlimit(RLIMIT_NOFILE, static_cast<unsigned>(task_data_->max_files));
+    }
     set_rlimit(RLIMIT_NPROC,
         (task_data_->max_threads == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_threads)));
     set_rlimit(RLIMIT_MEMLOCK, 0);
@@ -648,7 +649,7 @@ void Container::slave() {
 
     char *path_env = getenv("PATH");
     if (path_env != nullptr) {
-        task_data_->env.add(format("path=%s", path_env));
+        task_data_->env.add(format("PATH=%s", path_env));
     }
 
     execvpe(task_data_->argv[0], task_data_->argv.get(), task_data_->env.get());

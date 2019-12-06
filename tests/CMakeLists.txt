@@ -27,10 +27,8 @@ add_custom_target(
     DEPENDS ${TEST_TARGETS} run.py tests.py
 )
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-
 add_custom_target(
     test
     DEPENDS tests
-    COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/run.py
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/run.py
 )

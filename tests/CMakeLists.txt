@@ -23,12 +23,12 @@ libsbox_cpp_test(test_validate_exit_code)
 libsbox_cpp_test(test_validate_term_signal)
 
 add_custom_target(
-    tests
+    build_tests
     DEPENDS ${TEST_TARGETS} run.py tests.py
 )
 
 add_custom_target(
-    test
-    DEPENDS tests
+    tests
+    DEPENDS build_tests
     COMMAND python3.8 ${CMAKE_CURRENT_SOURCE_DIR}/run.py
 )

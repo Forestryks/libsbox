@@ -38,7 +38,7 @@ script:
   - cmake ..
   - make
   - yes | sudo make install
-  - sudo make test
+  - sudo make tests
 
   # Running tests
   # - sudo swapoff -a

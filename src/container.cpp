@@ -69,7 +69,6 @@ void Container::set_task(libsbox::Task *task) {
     if (stdin_filename.empty()) {
         task_data_->stdin_desc.filename = "/dev/null";
     } else {
-
         if (stdin_filename[0] == '@') {
             const auto &pipe = Worker::get().get_pipe(stdin_filename.substr(1));
             task_data_->stdin_desc.fd = pipe.first;
@@ -145,8 +144,21 @@ void Container::set_task(libsbox::Task *task) {
         task_data_->argv.add(arg);
     }
 
-    // ENV to do?
+    size_t env_size = task->get_env().size();
+    if (env_size > task_data_->env.max_count()) {
+        die(format("env size is larger than maximum (%zi > %zi)", env_size, task_data_->env.max_count()));
+    }
+    total_size = 0;
+    for (size_t i = 0; i < env_size; ++i) {
+        total_size += task->get_env()[i].size();
+    }
+    if (total_size > task_data_->env.max_size()) {
+        die(format("env total size is larger than maximum (%zi > %zi)", total_size, task_data_->env.max_size()));
+    }
     task_data_->env.clear();
+    for (const auto &arg : task->get_env()) {
+        task_data_->env.add(arg);
+    }
 
     size_t binds_count = task->get_binds().size();
     if (binds_count > task_data_->binds.max_size()) {
@@ -647,9 +659,18 @@ void Container::slave() {
     memory_controller_->enter();
     cpuacct_controller_->enter();
 
-    char *path_env = getenv("PATH");
-    if (path_env != nullptr) {
-        task_data_->env.add(format("PATH=%s", path_env));
+    bool has_path = false;
+    for (size_t i = 0; i < task_data_->env.count(); ++i) {
+        if (strcmp(task_data_->env[i], "PATH=") == 0) {
+            has_path = true;
+            break;
+        }
+    }
+    if (!has_path) {
+        char *path_env = getenv("PATH");
+        if (path_env != nullptr) {
+            task_data_->env.add(format("PATH=%s", path_env));
+        }
     }
 
     execvpe(task_data_->argv[0], task_data_->argv.get(), task_data_->env.get());

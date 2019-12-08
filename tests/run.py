@@ -73,6 +73,9 @@ def main():
     for test in tests:
         run_test(test)
 
+    if use_bundled:
+        os.remove("/run/libsboxd.pid")
+
 
 if __name__ == "__main__":
     main()

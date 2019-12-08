@@ -17,7 +17,7 @@
 namespace libsbox {
 
 static const size_t ARGC_MAX = 128;
-static const size_t ENVC_MAX = 1;
+static const size_t ENVC_MAX = 128;
 static const size_t BINDS_MAX = 10;
 static const size_t ARGV_MAX = 4096;
 static const size_t ENV_MAX = 4096;
@@ -124,7 +124,8 @@ public:
 
     const std::vector<std::string> &get_argv() const;
     void set_argv(const std::vector<std::string> &argv);
-//    void set_env(const std::vector<std::string> &env);
+    std::vector<std::string> &get_env();
+    const std::vector<std::string> &get_env() const;
     std::vector<BindRule> &get_binds();
     const std::vector<BindRule> &get_binds() const;
 

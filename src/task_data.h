@@ -49,7 +49,7 @@ struct TaskData {
 
     IOStream stdin_desc, stdout_desc, stderr_desc;
     PlainStringVector<ARGC_MAX, ARGV_MAX> argv;
-    PlainStringVector<ENVC_MAX, ENV_MAX> env;
+    PlainStringVector<ENVC_MAX + 1, ENV_MAX + 1024> env;
 
     PlainVector<BindData, BINDS_MAX> binds;
 

@@ -1,11 +1,9 @@
 import subprocess
-from sys import stdin, stdout
 from tests import tests
-from multiprocessing.dummy import Pool
 from threading import Lock
-import ctypes
-import signal
 import time
+from sys import argv
+import os
 
 
 class Color:
@@ -55,25 +53,22 @@ def format_argv(argv):
 
 
 def run_test(test):
-    completed_process = subprocess.run(test.argv, capture_output=True)
+    completed_process = subprocess.run(test.argv, stderr=subprocess.PIPE)
     if completed_process.returncode == 0:
         test_passed(format_argv(test.argv))
     else:
         test_failed(format_argv(test.argv), completed_process.stderr.decode())
 
 
-def set_pdeathsig(sig=signal.SIGKILL):
-    def ret():
-        libc = ctypes.CDLL("libc.so.6")
-        return libc.prctl(1, sig)
-    return ret
-
-
 def main():
-    libsboxd_process = subprocess.Popen(["libsboxd"], preexec_fn=lambda: set_pdeathsig())
-    time.sleep(0.5)
-    if libsboxd_process.poll() is not None:
-        exit(1)
+    use_bundled = ("--use-bundled" in argv)
+
+    if use_bundled:
+        libsboxd_process = subprocess.Popen(["libsboxd"])
+        time.sleep(0.5)
+        assert libsboxd_process.poll() is None
+    else:
+        assert os.path.exists("/etc/libsboxd/socket")
 
     for test in tests:
         run_test(test)
@@ -81,4 +76,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

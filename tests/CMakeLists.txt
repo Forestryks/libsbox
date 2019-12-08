@@ -30,5 +30,11 @@ add_custom_target(
 add_custom_target(
     tests
     DEPENDS build_tests
-    COMMAND python3.8 ${CMAKE_CURRENT_SOURCE_DIR}/run.py
+    COMMAND unshare -fp python3 ${CMAKE_CURRENT_SOURCE_DIR}/run.py
+)
+
+add_custom_target(
+    bundled_tests
+    DEPENDS build_tests
+    COMMAND unshare -fp python3 ${CMAKE_CURRENT_SOURCE_DIR}/run.py --use-bundled
 )

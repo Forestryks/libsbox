@@ -22,7 +22,6 @@ addons:
       - cmake
       - gcc-9
       - g++-9
-      - python3.8
 
 install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
@@ -38,7 +37,7 @@ script:
   - cmake ..
   - make
   - yes | sudo make install
-  - sudo make tests
+  - sudo make bundled_tests
 
   # Running tests
   # - sudo swapoff -a

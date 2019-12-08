@@ -19,8 +19,12 @@ macro(libsbox_ccp_executable name)
     add_executable(${name} EXCLUDE_FROM_ALL ${name}.cpp)
 endmacro()
 
-libsbox_cpp_test(test_validate_exit_code)
-libsbox_cpp_test(test_validate_term_signal)
+libsbox_cpp_test(test_exit_code)
+libsbox_cpp_test(test_term_signal)
+libsbox_cpp_test(test_time_limit)
+libsbox_cpp_test(test_wall_time_limit)
+libsbox_cpp_test(test_time_usage)
+libsbox_cpp_test(test_wall_time_usage)
 
 add_custom_target(
     build_tests

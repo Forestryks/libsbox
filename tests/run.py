@@ -48,6 +48,10 @@ def test_failed(s, desc):
     safe_print("[ " + Color.fail("FAILED") + " ] " + s + "\n" + desc)
 
 
+def test_failed_optional(s, desc):
+    safe_print("[ " + Color.warn("FAILED") + " ] " + s)
+
+
 def format_argv(argv):
     return ' '.join([argv[i] if i == 0 else '"' + argv[i].replace('"', '\\"') + '"' for i in range(len(argv))])
 
@@ -57,7 +61,10 @@ def run_test(test):
     if completed_process.returncode == 0:
         test_passed(format_argv(test.argv))
     else:
-        test_failed(format_argv(test.argv), completed_process.stderr.decode())
+        if test.optional:
+            test_failed_optional(format_argv(test.argv), completed_process.stderr.decode())
+        else:
+            test_failed(format_argv(test.argv), completed_process.stderr.decode())
 
 
 def main():

@@ -129,12 +129,6 @@ public:
 
 private:
     void init() {
-        set_time_limit_ms(1000);
-        set_wall_time_limit_ms(1000);
-        set_memory_limit_kb(256 * 1024);
-        set_fsize_limit_kb(256 * 1024);
-        set_max_files(32);
-        set_max_threads(1);
         set_need_ipc(false);
         set_use_standard_binds(true);
         get_stdin().disable();

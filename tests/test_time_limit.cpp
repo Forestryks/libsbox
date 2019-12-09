@@ -10,6 +10,7 @@ static int invoker_main(const std::vector<std::string> &args) {
     GenericTarget target = GenericTarget::from_current_executable("target", args[0]);
     target.set_time_limit_ms(stoi(args[0]));
     Testing::safe_run({&target});
+    target.print_stats(std::cerr);
     assert(target.is_time_limit_exceeded());
     assert(!target.is_wall_time_limit_exceeded());
     return 0;

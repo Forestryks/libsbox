@@ -4,6 +4,7 @@ from threading import Lock
 import time
 from sys import argv
 import os
+from multiprocessing.pool import ThreadPool
 
 
 class Color:
@@ -71,6 +72,8 @@ def main():
     use_bundled = ("--use-bundled" in argv)
 
     if use_bundled:
+        if os.path.exists("/run/libsboxd.pid"):
+            os.system("libsboxd stop")
         libsboxd_process = subprocess.Popen(["libsboxd"])
         time.sleep(0.5)
         assert libsboxd_process.poll() is None
@@ -79,6 +82,9 @@ def main():
 
     for test in tests:
         run_test(test)
+
+    # thread_pool = ThreadPool(4)
+    # thread_pool.map(run_test, tests)
 
     if use_bundled:
         os.remove("/run/libsboxd.pid")

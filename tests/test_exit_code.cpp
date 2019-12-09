@@ -7,6 +7,7 @@
 static int invoker_main(const std::vector<std::string> &args) {
     GenericTarget target = GenericTarget::from_current_executable("target", args[0]);
     Testing::safe_run({&target});
+    target.print_stats(std::cerr);
     target.assert_exited(stoi(args[0]));
     return 0;
 }

@@ -12,8 +12,8 @@ static int invoker_main(const std::vector<std::string> &args) {
     GenericTarget target = GenericTarget::from_current_executable("target", args[0]);
     target.set_time_limit_ms(target_time_usage * 2);
     Testing::safe_run({&target});
-    assert(!target.is_time_limit_exceeded());
-    assert(!target.is_wall_time_limit_exceeded());
+    target.print_stats(std::cerr);
+    assert(target.exited());
     assert(labs(target.get_time_usage_ms() - target_time_usage) <= allowed_delta);
     return 0;
 }

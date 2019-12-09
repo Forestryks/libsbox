@@ -25,6 +25,8 @@ libsbox_cpp_test(test_time_limit)
 libsbox_cpp_test(test_wall_time_limit)
 libsbox_cpp_test(test_time_usage)
 libsbox_cpp_test(test_wall_time_usage)
+libsbox_cpp_test(test_memory_limit)
+libsbox_cpp_test(test_memory_usage)
 
 add_custom_target(
     build_tests

@@ -1,0 +1,8 @@
+{
+  "num_boxes": 1,
+  "socket_path": "/etc/libsboxd/socket",
+  "box_dir": "/var/libsboxd/box",
+  "first_uid": 5678,
+  "cgroup_root": "/sys/fs/cgroup/",
+  "timer_interval_ms": 20
+}

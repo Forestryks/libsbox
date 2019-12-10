@@ -1,0 +1,27 @@
+{
+  "tasks": [
+    {
+      "argv": [
+        "test"
+      ],
+      "time_limit_ms": 1000,
+      "wall_time_limit_ms": 1000,
+      "memory_limit_kb": 262144,
+      "fsize_limit_kb": 262144,
+      "max_files": 16,
+      "max_threads": 1,
+      "stdin": null,
+      "stdout": "@pipe_name",
+      "stderr": "@stderr",
+      "need_ipc": false,
+      "use_standard_binds": true,
+      "binds": [
+        {
+          "inside": "input.txt",
+          "outside": "/var/problems/0001/tests/01",
+          "flags": 0
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/schema#",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "tasks"
+      ],
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "time_usage_ms",
+              "time_usage_sys_ms",
+              "time_usage_user_ms",
+              "wall_time_usage_ms",
+              "memory_usage_kb",
+              "time_limit_exceeded",
+              "wall_time_limit_exceeded",
+              "exited",
+              "exit_code",
+              "signaled",
+              "term_signal",
+              "oom_killed",
+              "memory_limit_hit"
+            ],
+            "properties": {
+              "time_usage_ms": {
+                "type": "integer"
+              },
+              "time_usage_sys_ms": {
+                "type": "integer"
+              },
+              "time_usage_user_ms": {
+                "type": "integer"
+              },
+              "wall_time_usage_ms": {
+                "type": "integer"
+              },
+              "memory_usage_kb": {
+                "type": "integer"
+              },
+              "time_limit_exceeded": {
+                "type": "boolean"
+              },
+              "wall_time_limit_exceeded": {
+                "type": "boolean"
+              },
+              "exited": {
+                "type": "boolean"
+              },
+              "exit_code": {
+                "type": "integer"
+              },
+              "signaled": {
+                "type": "boolean"
+              },
+              "term_signal": {
+                "type": "integer"
+              },
+              "oom_killed": {
+                "type": "boolean"
+              },
+              "memory_limit_hit": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

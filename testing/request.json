@@ -1,0 +1,25 @@
+{
+  "tasks": [
+    {
+      "argv":["/home/forestryks/Projects/libsbox/testing/test", "hello"],
+      "time_limit_ms": 1000,
+      "wall_time_limit_ms": 1000,
+      "memory_limit_kb": 262144,
+      "fsize_limit_kb": 262144,
+      "max_files": 16,
+      "max_threads": 1,
+      "stdin": "input",
+      "stdout": "output",
+      "stderr": null,
+      "ipc": false,
+      "standard_binds": true,
+      "binds": [
+        {
+          "inside": ".",
+          "outside": "/home/forestryks/Projects/libsbox/testing/work",
+          "flags": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,34 +1,88 @@
-cmake_minimum_required(VERSION 3.10)
-set(CMAKE_CXX_STANDARD 11)
-project(libsbox)
+add_subdirectory(schema)
 
-add_library(sbox init.cpp die.cpp execution_target.cpp io.cpp execution_context.cpp fs.cpp signal.cpp cgroup.cpp)
+set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/schema/generated/request_schema.c PROPERTY GENERATED 1)
+set_property(SOURCE ${CMAKE_CURRENT_BINARY_DIR}/schema/generated/response_schema.c PROPERTY GENERATED 1)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/schema/)
+
+add_executable(
+    libsboxd
+    libsboxd.cpp
+    libsbox.cpp
+    context_manager.cpp
+    utils.cpp
+    shared_memory.cpp
+    shared_mutex.cpp
+    shared_cond.cpp
+    shared_id_getter.cpp
+    shared_barrier.cpp
+    config.cpp
+    signals.cpp
+    daemon.cpp
+    worker.cpp
+    container.cpp
+    cgroup_controller.cpp
+    bind.cpp
+    logger.cpp
+    schema/generated/request_schema.c
+    schema/generated/response_schema.c
+    schema_validator.cpp
+    error.cpp)
+
+target_link_libraries(libsboxd pthread)
 
 install(
-    TARGETS sbox
-    DESTINATION lib/x86_64-linux-gnu
-)
-
-add_executable(invoke invoke.cpp)
-target_link_libraries(invoke sbox)
-
-install(
-    TARGETS invoke
+    TARGETS libsboxd
     DESTINATION bin
-    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ SETUID SETGID
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ WORLD_READ
+)
+
+add_dependencies(libsboxd json_schemas)
+
+set(
+    LIBRARY_SOURCES
+    libsbox.cpp
+    utils.cpp
+    context_manager.cpp
+    error.cpp
+    schema_validator.cpp
+    schema/generated/response_schema.c
+)
+
+add_library(
+    sbox-static
+    ${LIBRARY_SOURCES}
+)
+
+SET_TARGET_PROPERTIES(
+    sbox-static PROPERTIES
+    OUTPUT_NAME sbox CLEAN_DIRECT_OUTPUT 1
+)
+
+add_dependencies(sbox-static json_schemas)
+
+add_library(
+    sbox-shared SHARED
+    ${LIBRARY_SOURCES}
+)
+
+SET_TARGET_PROPERTIES(
+    sbox-shared PROPERTIES
+    OUTPUT_NAME sbox CLEAN_DIRECT_OUTPUT 1
+)
+
+add_dependencies(sbox-shared json_schemas)
+
+target_compile_options(
+    sbox-static
+    PUBLIC -fPIC
 )
 
 install(
-	CODE
-	"execute_process(COMMAND groupadd invokers)"
+    TARGETS sbox-static
+    DESTINATION lib
 )
 
 install(
-    CODE
-    "execute_process(COMMAND chown root:invokers ${CMAKE_INSTALL_PREFIX}/bin/invoke)"
-)
-
-install(
-    CODE
-    "execute_process(COMMAND chmod +s ${CMAKE_INSTALL_PREFIX}/bin/invoke)"
+    TARGETS sbox-shared
+    DESTINATION lib
 )

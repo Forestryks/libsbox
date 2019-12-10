@@ -2,38 +2,41 @@
  * Copyright (c) 2019 Andrei Odintsov <forestryks1@gmail.com>
  */
 
-#include <libsbox/logger.h>
-#include <ctime>
-#include <memory.h>
-#include <cstdlib>
-#include <cstdio>
+#include "logger.h"
+#include "context_manager.h"
+#include "utils.h"
 
-const char *get_time_stamp() {
-    time_t     now = time(0);
-    tm  timestruct = {};
-    char *buf = new char[80];
-    timestruct = *localtime(&now);
-    strftime(buf, 80, "%Y-%m-%d %X", &timestruct);
-    return buf;
+#include <unistd.h>
+#include <fcntl.h>
+
+Logger *Logger::logger_ = nullptr;
+
+void Logger::init() {
+    if (logger_ != nullptr) {
+        die("Logger already initialized");
+    }
+    logger_ = new Logger();
 }
 
-void put_time_stamp(const char *time_stamp) {
-    delete[] time_stamp;
+Logger &Logger::get() {
+    return *logger_;
 }
 
-const char *levels[] = {
-    "INFO  ",
-    "WARN  ",
-    "ERROR "
-};
-
-void internal_log(int level, const char *message, const char *file, const char *function, int line) {
-    const char *time_stamp = get_time_stamp();
-
-    fprintf(stderr, "[%s] [%s] at %s() (%s:%d): %s\n", time_stamp, levels[level], function, file, line, message);
-
-    put_time_stamp(time_stamp);
+fd_t Logger::get_fd() const {
+    return fd_;
 }
-void internal_log(int level, const std::string &message, const char *file, const char *function, int line) {
-    internal_log(level, message.c_str(), file, function, line);
+
+void Logger::_log(std::string msg) {
+    msg = format("[%s] %s\n", ContextManager::get().get_name().c_str(), msg.c_str());
+    // Will be atomic if msg.size() <= PIPE_BUF (4096)
+    if (write(fd_, msg.c_str(), msg.size()) < 0) {
+        die(format("Logger write() failed: %m"));
+    }
+}
+
+Logger::Logger() {
+    fd_ = dup3(STDERR_FILENO, 107, O_CLOEXEC);
+    if (fd_ < 0) {
+        die(format("Logger dup3() failed: %m"));
+    }
 }

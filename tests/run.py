@@ -89,6 +89,11 @@ def main():
     if use_bundled:
         os.remove("/run/libsboxd.pid")
 
+    if failed:
+        exit(1)
+    else:
+        print(Color.ok("All tests passed. Some not necessary tests may be failed, they are marked ") + Color.warn("yellow"))
+
 
 if __name__ == "__main__":
     main()

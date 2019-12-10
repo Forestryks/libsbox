@@ -1,79 +1,60 @@
 # libsbox
 [![Build Status](https://travis-ci.org/Forestryks/libsbox.svg?branch=master)](https://travis-ci.org/Forestryks/libsbox)
 
-libsbox is open source C++ library introduced to be used in programming contests environments. It is simple and provide full functionality needed to evaluate participants' solutions.
+
+Libsbox is sandbox desined for evaluating submissions in programming contests.
+
+## Why libsbox?
+
+ - Performance. Libsbox need only around 2ms to start sandbox, which is close to simple exec()
+ - Ease of use. You can include `libsbox.h` to easily run anything in sandbox.
 
 ## Getting started
 
 These instructions will guide you through the installation process of libsbox.
 
 ### Prerequisites
-
-##### To build libsbox you need:
- - GCC or Clang compiler that can compile C++14 source
- - cmake version 3.10 or higher
- 
-##### To use libsbox you need:
- - linux kernel supporting following features (kernel version 5 or higher is recommended):
-    - cgroup filesystem, namely cpuacct and memory controllers
-    - oom_kill counter in memory cgroup
-    - namespaces, namely mount, ipc, net and pid namespaces
- - cgroup hierarchy mounted in /sys/fs/cgroup
+ - C++17 compiler, especially `std::filesystem` support
+ - CMake version 3.10 or higher
+ - linux kernel version 5 or higher (may also work with late 4.* versions)
+ - cgroup v1 heirarchy mounted in /sys/fs/cgroup
 
 ### Installing
-Follow the steps bellow to install libsbox on your system
 
-1. Create build directory and change to it
+1. Build sources
  ```bash
  mkdir build
  cd build
- ```
-
-2. Run Cmake to generate build files
- ```bash
  cmake ..
- ```
-
-3. Compile sources using make
- ```bash
  make
  ```
 
-4. Install library and associated headers
+2. Install libsbox
  ```bash
- make install
+ sudo make install
  ```
+ Following will be installed:
+  - `/usr/include/libsbox.h` - libsbox C++ header
+  - `/usr/lib/libsbox.a` - static library
+  - `/usr/lib/libsbox.so` - dynamic library
+  - `/usr/bin/libsboxd` - libsbox daemon binary
+  - `/etc/libsbox/conf.json` - libsbox configuration file
+  - invokers group created
 
-5. To allow users use libsbox add them to `invokers` group (insecure)
+3. To allow users use libsbox add them to `invokers` group TODO
  ```bask
  sudo usermod -aG invokers username
  ```
 
-## Running the tests
-
-To run tests type
-```bash
-sudo ctest --output-on-failure
-```
-or
-```bash
-sudo CTEST_OUTPUT_ON_FAILURE=1 make test
-```
-
-If memory tests fail disable swap
-```bash
-sudo swapoff -a
-```
-
-If tests don't pass check whether your system satisfies prerequisites. If you can't solve the problem yourself, open an issue in [project github](https://github.com/Forestryks/libsbox)
+4. Run tests
+ ```bash
+ sudo make bundled_tests
+ ```
+ If you started libsboxd yourself and want to validate that everything is good run `sudo make tests`
 
 ## Documentation
 
 Not ready yet
-
-## Versioning
-
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/Forestryks/libsbox/tags).
 
 ## Authors
 

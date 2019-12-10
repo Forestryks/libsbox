@@ -18,7 +18,7 @@ static int invoker_main(const std::vector<std::string> &args) {
 
 static int target_main(const std::vector<std::string> &args) {
     int time_limit = stoi(args[0]);
-    usleep(static_cast<useconds_t>(time_limit * 1000));
+    usleep(static_cast<useconds_t>(time_limit * 1100));
     return 0;
 }
 

@@ -9,7 +9,7 @@ macro(libsbox_cpp_test name)
         TEST_TARGETS "${TEST_TARGETS}" "${name}"
     )
     add_executable(${name} EXCLUDE_FROM_ALL ${name}.cpp)
-    target_link_libraries(${name} sbox)
+    target_link_libraries(${name} libsbox::sbox-static)
 endmacro()
 
 macro(libsbox_ccp_executable name)

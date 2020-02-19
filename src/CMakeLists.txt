@@ -86,3 +86,5 @@ install(
     TARGETS sbox-shared
     DESTINATION lib
 )
+
+add_library(libsbox::sbox-static ALIAS sbox-static)

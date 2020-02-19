@@ -41,12 +41,12 @@ These instructions will guide you through the installation process of libsbox.
   - `/etc/libsbox/conf.json` - libsbox configuration file
   - invokers group created
 
-3. To allow users use libsbox add them to `invokers` group TODO
+[comment]: # (3. To allow users use libsbox add them to `invokers` group TODO
  ```bask
  sudo usermod -aG invokers username
- ```
+ ```)
 
-4. Run tests
+3. Run tests
  ```bash
  sudo make bundled_tests
  ```

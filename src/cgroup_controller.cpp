@@ -56,7 +56,7 @@ void CgroupController::enter() {
 void CgroupController::init(const std::string &name) {
     fs::path path = Config::get().get_cgroup_root() / name / "libsbox";
     std::error_code error;
-    fs::remove_all(path, error);
+    fs::remove(path, error);
     if (error) {
         die(format("Cannot remove dir '%s': %s", path.c_str(), error.message().c_str()));
     }

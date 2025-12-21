@@ -11,7 +11,7 @@
 #include <fcntl.h>
 
 CgroupController::CgroupController(const std::string &name, const std::string &id) {
-    path_ = Config::get().get_cgroup_root() / name / "libsbox" / id;
+    path_ = Config::get().get_cgroup_root() / "libsbox";
     std::error_code error;
     fs::create_directories(path_, error);
     if (error) {
@@ -20,7 +20,8 @@ CgroupController::CgroupController(const std::string &name, const std::string &i
 }
 
 CgroupController::~CgroupController() {
-    if (enter_fd_ != -1) close_enter_fd();
+    if (enter_fd_ != -1)
+        close_enter_fd();
     std::error_code error;
     fs::remove(path_, error);
     if (error) {
@@ -41,6 +42,18 @@ std::string CgroupController::read(const std::string &filename) {
     return read_file(path_ / filename);
 }
 
+std::string CgroupController::read_field(const std::string &filename, const std::string &field) {
+    std::stringstream sstream(read(filename));
+    std::string name, val;
+    while (sstream >> name >> val) {
+        if (name == field) {
+            return val;
+        }
+    }
+    die("Can't find " + field + " field in " + filename);
+    _exit(-1);  // we should not get here
+}
+
 void CgroupController::enter() {
     if (enter_fd_ == -1) {
         die("Cgroup enter was not delayed");
@@ -48,13 +61,13 @@ void CgroupController::enter() {
     std::string to_write = std::to_string(getpid());
     int cnt = ::write(enter_fd_, to_write.c_str(), to_write.size());
     if (cnt < 0 || static_cast<size_t>(cnt) != to_write.size()) {
-        die(format("Cannot write to cgroups tasks file: %m"));
+        die(format("Cannot write to cgroup.procs file: %m"));
     }
     close_enter_fd();
 }
 
 void CgroupController::init(const std::string &name) {
-    fs::path path = Config::get().get_cgroup_root() / name / "libsbox";
+    fs::path path = Config::get().get_cgroup_root() / "libsbox";
     std::error_code error;
     fs::remove(path, error);
     if (error) {
@@ -70,7 +83,7 @@ void CgroupController::delay_enter() {
     if (enter_fd_ != -1) {
         return;
     }
-    fs::path path = path_ / "tasks";
+    fs::path path = path_ / "cgroup.procs";
     enter_fd_ = open(path.c_str(), O_WRONLY | O_CLOEXEC);
     if (enter_fd_ < 0) {
         die(format("Cannot open file '%s' for writing: %m", path.c_str()));

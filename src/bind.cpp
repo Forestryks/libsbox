@@ -67,6 +67,10 @@ void Bind::mount(const fs::path &root_dir, const fs::path &work_dir) {
         if (::mount(from_.c_str(), to_.c_str(), "none", mount_flags, "") < 0) {
             die(format("Cannot mount %s: %m", to_.c_str()));
         }
+        // Strange bug with MS_RDONLY
+        if (::mount(from_.c_str(), to_.c_str(), "none", mount_flags | MS_REMOUNT, "") < 0) {
+            die(format("Cannot remount %s: %m", to_.c_str()));
+        }
         mounted_ = true;
     } else if (fs::is_regular_file(from_, error)) {
         fs::create_directories(to_.parent_path(), error);
@@ -82,6 +86,10 @@ void Bind::mount(const fs::path &root_dir, const fs::path &work_dir) {
         }
         if (::mount(from_.c_str(), to_.c_str(), "none", mount_flags, "") < 0) {
             die(format("Cannot mount %s: %m", to_.c_str()));
+        }
+        // Strange bug with MS_RDONLY
+        if (::mount(from_.c_str(), to_.c_str(), "none", mount_flags | MS_REMOUNT, "") < 0) {
+            die(format("Cannot remount %s: %m", to_.c_str()));
         }
         mounted_ = true;
     } else {

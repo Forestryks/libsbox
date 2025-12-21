@@ -21,13 +21,15 @@ public:
     void _die();
     void write(const std::string &filename, const std::string &data);
     std::string read(const std::string &filename);
+    std::string read_field(const std::string &filename, const std::string &field_name);
     void delay_enter();
     fd_t get_enter_fd();
     void enter();
+
 private:
     fs::path path_;
     fd_t enter_fd_ = -1;
     void close_enter_fd();
 };
 
-#endif //LIBSBOX_CGROUP_CONTROLLER_H_
+#endif  // LIBSBOX_CGROUP_CONTROLLER_H_

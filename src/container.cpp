@@ -23,14 +23,17 @@
 
 Container *Container::container_ = nullptr;
 
-Container::Container(uid_t id, bool permanent) : id_(id), permanent_(permanent) {}
+Container::Container(uid_t id, bool permanent) : id_(id), permanent_(permanent) {
+}
 
 void Container::_die(const std::string &error) {
     if (slave_pid_ == 0) {
         task_data_->error = true;
     } else {
-        if (cpuacct_controller_ != nullptr) cpuacct_controller_->_die();
-        if (memory_controller_ != nullptr) memory_controller_->_die();
+        if (cpuacct_controller_ != nullptr)
+            cpuacct_controller_->_die();
+        if (memory_controller_ != nullptr)
+            memory_controller_->_die();
     }
     log(error);
 
@@ -74,10 +77,8 @@ void Container::set_task(libsbox::Task *task) {
             task_data_->stdin_desc.fd = pipe.first;
         } else {
             if (stdin_filename.size() > task_data_->stdin_desc.filename.max_size()) {
-                die(format(
-                    "stdin filename is larger than maximum (%zi > %zi)",
-                    stdin_filename.size(),
-                    task_data_->stdin_desc.filename.max_size()));
+                die(format("stdin filename is larger than maximum (%zi > %zi)",
+                           stdin_filename.size(), task_data_->stdin_desc.filename.max_size()));
             }
             task_data_->stdin_desc.filename = stdin_filename;
         }
@@ -94,10 +95,8 @@ void Container::set_task(libsbox::Task *task) {
             task_data_->stdout_desc.fd = pipe.second;
         } else {
             if (stdout_filename.size() > task_data_->stdout_desc.filename.max_size()) {
-                die(format(
-                    "stdout filename is larger than maximum (%zi > %zi)",
-                    stdout_filename.size(),
-                    task_data_->stdout_desc.filename.max_size()));
+                die(format("stdout filename is larger than maximum (%zi > %zi)",
+                           stdout_filename.size(), task_data_->stdout_desc.filename.max_size()));
             }
             task_data_->stdout_desc.filename = stdout_filename;
         }
@@ -119,10 +118,8 @@ void Container::set_task(libsbox::Task *task) {
             }
         } else {
             if (stderr_filename.size() > task_data_->stderr_desc.filename.max_size()) {
-                die(format(
-                    "stderr filename is larger than maximum (%zi > %zi)",
-                    stderr_filename.size(),
-                    task_data_->stderr_desc.filename.max_size()));
+                die(format("stderr filename is larger than maximum (%zi > %zi)",
+                           stderr_filename.size(), task_data_->stderr_desc.filename.max_size()));
             }
             task_data_->stderr_desc.filename = stderr_filename;
         }
@@ -130,14 +127,16 @@ void Container::set_task(libsbox::Task *task) {
 
     size_t argv_size = task->get_argv().size();
     if (argv_size > task_data_->argv.max_count()) {
-        die(format("argv size is larger than maximum (%zi > %zi)", argv_size, task_data_->argv.max_count()));
+        die(format("argv size is larger than maximum (%zi > %zi)", argv_size,
+                   task_data_->argv.max_count()));
     }
     size_t total_size = 0;
     for (size_t i = 0; i < argv_size; ++i) {
         total_size += task->get_argv()[i].size();
     }
     if (total_size > task_data_->argv.max_size()) {
-        die(format("argv total size is larger than maximum (%zi > %zi)", total_size, task_data_->argv.max_size()));
+        die(format("argv total size is larger than maximum (%zi > %zi)", total_size,
+                   task_data_->argv.max_size()));
     }
     task_data_->argv.clear();
     for (const auto &arg : task->get_argv()) {
@@ -146,14 +145,16 @@ void Container::set_task(libsbox::Task *task) {
 
     size_t env_size = task->get_env().size();
     if (env_size > task_data_->env.max_count()) {
-        die(format("env size is larger than maximum (%zi > %zi)", env_size, task_data_->env.max_count()));
+        die(format("env size is larger than maximum (%zi > %zi)", env_size,
+                   task_data_->env.max_count()));
     }
     total_size = 0;
     for (size_t i = 0; i < env_size; ++i) {
         total_size += task->get_env()[i].size();
     }
     if (total_size > task_data_->env.max_size()) {
-        die(format("env total size is larger than maximum (%zi > %zi)", total_size, task_data_->env.max_size()));
+        die(format("env total size is larger than maximum (%zi > %zi)", total_size,
+                   task_data_->env.max_size()));
     }
     task_data_->env.clear();
     for (const auto &arg : task->get_env()) {
@@ -162,7 +163,8 @@ void Container::set_task(libsbox::Task *task) {
 
     size_t binds_count = task->get_binds().size();
     if (binds_count > task_data_->binds.max_size()) {
-        die(format("binds count is larger that maximum (%zi > %zi)", binds_count, task_data_->binds.max_size()));
+        die(format("binds count is larger that maximum (%zi > %zi)", binds_count,
+                   task_data_->binds.max_size()));
     }
     task_data_->binds.clear();
     for (const auto &bind : task->get_binds()) {
@@ -220,12 +222,9 @@ pid_t Container::start() {
     // CLONE_NEWNET - create new network namespace to block network
     // CLONE_NEWNS - create new mount namespace (used for safety reasons)
     // CLONE_NEWPID - create new pid namespace to hide other processes
-    pid_ = clone(
-        clone_callback,
-        clone_stack + clone_stack_size,
-        SIGCHLD | CLONE_FILES | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID,
-        this
-    );
+    pid_ = clone(clone_callback, clone_stack + clone_stack_size,
+                 SIGCHLD | CLONE_FILES | CLONE_NEWIPC | CLONE_NEWNET | CLONE_NEWNS | CLONE_NEWPID,
+                 this);
     delete[] clone_stack;
 
     return pid_;
@@ -249,9 +248,10 @@ void Container::serve() {
 
         cpuacct_controller_ = new CgroupController("cpuacct", std::to_string(id_));
         memory_controller_ = new CgroupController("memory", std::to_string(id_));
-        memory_controller_->write("memory.swappiness", "0");
+        memory_controller_->write("memory.swap.max", "0");
         if (task_data_->memory_limit_kb != -1) {
-            memory_controller_->write("memory.limit_in_bytes", std::to_string(task_data_->memory_limit_kb) + "K");
+            memory_controller_->write("memory.max",
+                                      std::to_string(task_data_->memory_limit_kb * 1024));
         }
 
         slave_pid_ = fork();
@@ -267,8 +267,8 @@ void Container::serve() {
 
         wait_for_slave();
 
-        for (auto &bind : binds) {
-            bind.umount_if_mounted();
+        for (size_t i = binds.size() - 1; i < binds.size(); --i) {
+            binds[i].umount_if_mounted();
         }
 
         delete cpuacct_controller_;
@@ -279,7 +279,8 @@ void Container::serve() {
         // Results ready
         barrier_.wait();
 
-        if (!permanent_) break;
+        if (!permanent_)
+            break;
 
         cleanup_root();
     }
@@ -312,7 +313,8 @@ void Container::prepare_root() {
     std::error_code error;
     fs::create_directories(root_, error);
     if (error) {
-        die(format("Cannot create root directory (%s): %s", root_.c_str(), error.message().c_str()));
+        die(format("Cannot create root directory (%s): %s", root_.c_str(),
+                   error.message().c_str()));
     }
 
     if (mount("none", root_.c_str(), "tmpfs", 0, "mode=755,size=1g") != 0) {
@@ -397,12 +399,14 @@ void Container::wait_for_slave() {
 
             timer_interrupt = false;
 
-            if (task_data_->time_limit_ms != -1 && get_time_usage_ms() > task_data_->time_limit_ms) {
+            if (task_data_->time_limit_ms != -1 &&
+                get_time_usage_ms() > task_data_->time_limit_ms) {
                 kill_all();
                 break;
             }
 
-            if (task_data_->wall_time_limit_ms != -1 && get_wall_clock_ms() > task_data_->wall_time_limit_ms) {
+            if (task_data_->wall_time_limit_ms != -1 &&
+                get_wall_clock_ms() > task_data_->wall_time_limit_ms) {
                 kill_all();
                 break;
             }
@@ -437,7 +441,8 @@ void Container::wait_for_slave() {
         task_data_->time_limit_exceeded = (task_data_->time_usage_ms > task_data_->time_limit_ms);
     }
     if (task_data_->wall_time_limit_ms != -1) {
-        task_data_->wall_time_limit_exceeded = (task_data_->wall_time_usage_ms > task_data_->wall_time_limit_ms);
+        task_data_->wall_time_limit_exceeded =
+            (task_data_->wall_time_usage_ms > task_data_->wall_time_limit_ms);
     }
 
     if (task_data_->error) {
@@ -476,41 +481,33 @@ time_ms_t Container::get_wall_clock_ms() {
 }
 
 time_ms_t Container::get_time_usage_ms() {
-    std::string data = cpuacct_controller_->read("cpuacct.usage");
-    return stoll(data) / 1000000;
+    std::string data = cpuacct_controller_->read_field("cpu.stat", "usage_usec");
+    return stoll(data) / 1000;
 }
 
 time_ms_t Container::get_time_usage_sys_ms() {
-    std::string data = cpuacct_controller_->read("cpuacct.usage_sys");
-    return stoll(data) / 1000000;
+    std::string data = cpuacct_controller_->read_field("cpu.stat", "system_usec");
+    return stoll(data) / 1000;
 }
 
 time_ms_t Container::get_time_usage_user_ms() {
-    std::string data = cpuacct_controller_->read("cpuacct.usage_user");
+    std::string data = cpuacct_controller_->read_field("cpu.stat", "user_usec");
     return stoll(data) / 1000000;
 }
 
 memory_kb_t Container::get_memory_usage_kb() {
-    long long max_usage = stoll(memory_controller_->read("memory.max_usage_in_bytes"));
-    long long cur_usage = stoll(memory_controller_->read("memory.usage_in_bytes"));
+    long long max_usage = stoll(memory_controller_->read("memory.peak"));
+    long long cur_usage = stoll(memory_controller_->read("memory.current"));
     return static_cast<memory_kb_t>(std::max(max_usage, cur_usage) / 1024);
 }
 
 bool Container::is_oom_killed() {
-    std::string data = memory_controller_->read("memory.oom_control");
-    std::stringstream sstream(memory_controller_->read("memory.oom_control"));
-    std::string name, val;
-    while (sstream >> name >> val) {
-        if (name == "oom_kill") {
-            return (val != "0");
-        }
-    }
-    die("Can't find oom_kill field in memory.oom_control");
-    _exit(-1); // we should not get here
+    // std::string data = memory_controller_->read("memory.oom_control");
+    return memory_controller_->read_field("memory.events", "oom_kill") != "0";
 }
 
 bool Container::is_memory_limit_hit() {
-    std::string data = memory_controller_->read("memory.failcnt");
+    std::string data = memory_controller_->read_field("memory.events", "max");
     return stoll(data);
 }
 
@@ -531,7 +528,8 @@ void Container::open_files() {
     }
 
     if (!task_data_->stderr_desc.filename.empty()) {
-        task_data_->stderr_desc.fd = open(task_data_->stderr_desc.filename.c_str(), O_WRONLY | O_TRUNC);
+        task_data_->stderr_desc.fd =
+            open(task_data_->stderr_desc.filename.c_str(), O_WRONLY | O_TRUNC);
         if (task_data_->stderr_desc.fd < 0) {
             die(format("Cannot open '%s': %m", task_data_->stderr_desc.filename.c_str()));
         }
@@ -572,11 +570,12 @@ void Container::close_all_fds() {
     while ((dentry = readdir(dir))) {
         char *end;
         fd_t fd = strtol(dentry->d_name, &end, 10);
-        if (*end) continue;
+        if (*end)
+            continue;
 
-        if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO || fd == dir_fd
-            || fd == Logger::get().get_fd() || fd == memory_controller_->get_enter_fd()
-            || fd == cpuacct_controller_->get_enter_fd())
+        if (fd == STDIN_FILENO || fd == STDOUT_FILENO || fd == STDERR_FILENO || fd == dir_fd ||
+            fd == Logger::get().get_fd() || fd == memory_controller_->get_enter_fd() ||
+            fd == cpuacct_controller_->get_enter_fd())
             continue;
         if (close(fd) != 0) {
             die(format("Cannot close fd %d: %m", fd));
@@ -608,7 +607,8 @@ void Container::setup_rlimits() {
         set_rlimit(RLIMIT_NOFILE, static_cast<unsigned>(task_data_->max_files));
     }
     set_rlimit(RLIMIT_NPROC,
-        (task_data_->max_threads == -1 ? RLIM_INFINITY : static_cast<unsigned>(task_data_->max_threads)));
+               (task_data_->max_threads == -1 ? RLIM_INFINITY
+                                              : static_cast<unsigned>(task_data_->max_threads)));
     set_rlimit(RLIMIT_MEMLOCK, 0);
     set_rlimit(RLIMIT_MSGQUEUE, 0);
 }
@@ -675,7 +675,7 @@ void Container::slave() {
 
     execvpe(task_data_->argv[0], task_data_->argv.get(), task_data_->env.get());
     die(format("Failed to execute command '%s': %m", task_data_->argv[0]));
-    _exit(-1); // we should not get here
+    _exit(-1);  // we should not get here
 }
 
 void Container::sigchld_action_wrapper(int, siginfo_t *siginfo, void *) {
@@ -687,12 +687,14 @@ Container &Container::get() {
 }
 
 void Container::sigchld_action(siginfo_t *siginfo) {
-    if (!task_data_->error) return;
+    if (!task_data_->error)
+        return;
     if (siginfo->si_code != CLD_EXITED || siginfo->si_status != 0) {
         if (siginfo->si_code == CLD_EXITED) {
             die(format("Slave exited with exit code %d", siginfo->si_status));
         } else {
-            die(format("Slave received signal %d (%s)", siginfo->si_status, strsignal(siginfo->si_status)));
+            die(format("Slave received signal %d (%s)", siginfo->si_status,
+                       strsignal(siginfo->si_status)));
         }
     }
 }
